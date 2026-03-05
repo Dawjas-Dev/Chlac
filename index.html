@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Mapa Miejscówek</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{box-sizing:border-box;}
+
+body{
+margin:0;
+font-family:'Inter',sans-serif;
+background:#f8fafc;
+}
+
+#map{
+height:100vh;
+}
+
+.fab{
+position:absolute;
+bottom:30px;
+left:50%;
+transform:translateX(-50%);
+width:65px;
+height:65px;
+border-radius:50%;
+border:none;
+font-size:30px;
+background:linear-gradient(135deg,#f59e0b,#ef4444);
+color:white;
+cursor:pointer;
+box-shadow:0 8px 25px rgba(0,0,0,0.25);
+z-index:1100;
+}
+
+.overlay{
+position:absolute;
+inset:0;
+background:rgba(0,0,0,0.3);
+display:none;
+z-index:1000;
+}
+
+.panel{
+position:absolute;
+bottom:-100%;
+left:50%;
+transform:translateX(-50%);
+width:95%;
+max-width:420px;
+padding:20px;
+border-radius:20px 20px 0 0;
+background:white;
+transition:0.4s;
+z-index:1200;
+box-shadow:0 -5px 30px rgba(0,0,0,0.15);
+}
+
+.panel.active{
+bottom:0;
+}
+
+.panel h2{
+margin-top:0;
+text-align:center;
+}
+
+input,select{
+width:100%;
+padding:12px;
+margin-bottom:10px;
+border-radius:12px;
+border:1px solid #e2e8f0;
+font-size:14px;
+}
+
+button.submit{
+width:100%;
+padding:12px;
+border-radius:12px;
+border:none;
+font-weight:600;
+cursor:pointer;
+background:linear-gradient(135deg,#f59e0b,#ef4444);
+color:white;
+}
+
+.close-btn{
+text-align:right;
+cursor:pointer;
+opacity:0.6;
+margin-bottom:10px;
+}
+
+.infoPanel{
+position:absolute;
+top:80px;
+right:30px;
+width:260px;
+background:white;
+padding:18px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,0.2);
+display:none;
+z-index:1200;
+}
+
+.infoPanel.active{
+display:block;
+}
+
+.infoHeader{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:8px;
+}
+
+.infoHeader span{
+cursor:pointer;
+opacity:0.6;
+}
+
+.risk span{
+font-size:24px;
+cursor:pointer;
+opacity:0.3;
+}
+
+.risk span.active{
+opacity:1;
+}
+
+.rating span{
+font-size:24px;
+cursor:pointer;
+opacity:0.3;
+}
+
+.rating span.active{
+opacity:1;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+
+<div class="panel" id="panel">
+
+<div class="close-btn" onclick="closePanel()">✖ Zamknij</div>
+
+<h2>Dodaj miejscówkę</h2>
+
+<select id="type">
+<option value="plener">🍾 Plener</option>
+<option value="pub">🍻 Pub</option>
+<option value="club">🍸 Klub</option>
+</select>
+
+<input id="nameInput" placeholder="Nazwa miejsca">
+<input id="descInput" placeholder="Opis">
+
+<div id="riskBox">
+
+<p>Poziom przypału</p>
+
+<div class="risk" id="riskIcons">
+<span>🚨</span>
+<span>🚨</span>
+<span>🚨</span>
+<span>🚨</span>
+<span>🚨</span>
+</div>
+
+</div>
+
+<button class="submit" id="startAdd">Wybierz punkt na mapie</button>
+
+</div>
+
+<button class="fab" onclick="openPanel()">＋</button>
+
+<div class="infoPanel" id="infoPanel">
+
+<div class="infoHeader">
+<b id="infoName"></b>
+<span onclick="closeInfo()">✖</span>
+</div>
+
+<p id="infoType"></p>
+<p id="infoDesc"></p>
+<p id="infoRisk"></p>
+
+<p>Ocena:</p>
+<div class="rating" id="ratingStars">
+<span>⭐</span>
+<span>⭐</span>
+<span>⭐</span>
+<span>⭐</span>
+<span>⭐</span>
+</div>
+
+</div>
+
+<script>
+
+const map=L.map('map').setView([52.2,19.2],6)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(map)
+
+let adding=false
+let riskLevel=1
+let currentSpot=null
+
+const typeSelect=document.getElementById("type")
+const riskBox=document.getElementById("riskBox")
+
+typeSelect.onchange=()=>{
+
+if(typeSelect.value==="plener"){
+riskBox.style.display="block"
+}else{
+riskBox.style.display="none"
+}
+
+}
+
+function openPanel(){
+panel.classList.add("active")
+overlay.style.display="block"
+}
+
+function closePanel(){
+panel.classList.remove("active")
+overlay.style.display="none"
+}
+
+function closeInfo(){
+infoPanel.classList.remove("active")
+}
+
+const riskIcons=document.querySelectorAll("#riskIcons span")
+
+riskIcons.forEach((icon,i)=>{
+
+icon.onclick=()=>{
+
+riskLevel=i+1
+
+riskIcons.forEach(x=>x.classList.remove("active"))
+
+for(let j=0;j<riskLevel;j++){
+riskIcons[j].classList.add("active")
+}
+
+}
+
+})
+
+document.getElementById("startAdd").onclick=()=>{
+
+const name=document.getElementById("nameInput").value
+
+if(!name){
+alert("Podaj nazwę miejsca")
+return
+}
+
+adding=true
+closePanel()
+
+alert("Kliknij miejsce na mapie")
+
+}
+
+function getEmoji(type){
+
+if(type==="plener") return "🍾"
+if(type==="pub") return "🍻"
+if(type==="club") return "🍸"
+
+}
+
+function createMarker(data,save=true){
+
+const icon=L.divIcon({
+html:`<div style="font-size:28px">${getEmoji(data.type)}</div>`,
+className:""
+})
+
+const marker=L.marker([data.lat,data.lng],{icon}).addTo(map)
+
+marker.on("click",()=>{
+
+currentSpot=data
+
+map.setView([data.lat,data.lng],17)
+
+infoPanel.classList.add("active")
+
+infoName.innerText=data.name
+infoType.innerText="Typ: "+data.type
+infoDesc.innerText=data.desc
+
+if(data.type==="plener"){
+
+let riskHTML="Przypał: "
+
+for(let i=0;i<5;i++){
+
+if(i<data.risk){
+riskHTML+="🚨"
+}else{
+riskHTML+='<span style="opacity:0.3">🚨</span>'
+}
+
+}
+
+infoRisk.innerHTML=riskHTML
+
+}else{
+infoRisk.innerHTML=""
+}
+
+updateRating()
+
+})
+
+if(save){
+
+let all=JSON.parse(localStorage.getItem("spots")||"[]")
+
+all.push(data)
+
+localStorage.setItem("spots",JSON.stringify(all))
+
+}
+
+}
+
+map.on("click",(e)=>{
+
+if(!adding) return
+
+const data={
+lat:e.latlng.lat,
+lng:e.latlng.lng,
+name:document.getElementById("nameInput").value,
+desc:document.getElementById("descInput").value,
+type:document.getElementById("type").value,
+risk:riskLevel,
+rating:0
+}
+
+createMarker(data)
+
+adding=false
+
+})
+
+function loadMarkers(){
+
+let all=JSON.parse(localStorage.getItem("spots")||"[]")
+
+all.forEach(m=>createMarker(m,false))
+
+}
+
+loadMarkers()
+
+/* RATING */
+
+const stars=document.querySelectorAll("#ratingStars span")
+
+stars.forEach((star,i)=>{
+
+star.onclick=()=>{
+
+if(!currentSpot) return
+
+currentSpot.rating=i+1
+
+updateRating()
+
+saveAll()
+
+}
+
+})
+
+function updateRating(){
+
+stars.forEach(s=>s.classList.remove("active"))
+
+if(!currentSpot) return
+
+for(let i=0;i<currentSpot.rating;i++){
+stars[i].classList.add("active")
+}
+
+}
+
+function saveAll(){
+
+let all=JSON.parse(localStorage.getItem("spots")||"[]")
+
+for(let i=0;i<all.length;i++){
+
+if(all[i].lat===currentSpot.lat && all[i].lng===currentSpot.lng){
+all[i]=currentSpot
+}
+
+}
+
+localStorage.setItem("spots",JSON.stringify(all))
+
+}
+
+</script>
+
+</body>
+</html>
