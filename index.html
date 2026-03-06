@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Mapa Miejscówek</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
@@ -14,16 +13,8 @@
 <style>
 
 *{box-sizing:border-box;}
-
-body{
-margin:0;
-font-family:'Inter',sans-serif;
-background:#f8fafc;
-}
-
-#map{
-height:100vh;
-}
+body{margin:0;font-family:'Inter',sans-serif;background:#f8fafc;}
+#map{height:100vh;}
 
 .fab{
 position:absolute;
@@ -65,14 +56,9 @@ z-index:1200;
 box-shadow:0 -5px 30px rgba(0,0,0,0.15);
 }
 
-.panel.active{
-bottom:0;
-}
+.panel.active{bottom:0;}
 
-.panel h2{
-margin-top:0;
-text-align:center;
-}
+.panel h2{margin-top:0;text-align:center;}
 
 input,select{
 width:100%;
@@ -80,7 +66,7 @@ padding:12px;
 margin-bottom:10px;
 border-radius:12px;
 border:1px solid #e2e8f0;
-font-size:14px;
+font-size:16px;
 }
 
 button.submit{
@@ -94,17 +80,52 @@ background:linear-gradient(135deg,#f59e0b,#ef4444);
 color:white;
 }
 
-.close-btn{
-text-align:right;
-cursor:pointer;
-opacity:0.6;
-margin-bottom:10px;
-}
+.close-btn{text-align:right;cursor:pointer;opacity:0.6;margin-bottom:10px;}
+
+
+ /* DOMYŚLNIE (MOBILE) */
 
 .infoPanel{
 position:absolute;
+top:10px;
+left:50%;
+transform:translateX(-50%);
+width:92%;
+max-width:420px;
+background:white;
+padding:18px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,0.2);
+display:none;
+z-index:1200;
+}
+
+.infoPanel.active{display:block;}
+
+
+/* DESKTOP */
+
+@media (min-width: 900px){
+
+.infoPanel{
+top:100px;
+left:auto;
+right:50px;
+transform:none;
+width:360px;
+padding:24px;
+border-radius:18px;
+}
+
+}
+
+
+
+/*
+.infoPanel{
+position:absolute;
 top:80px;
-right:30px;
+right:20px;
 width:260px;
 background:white;
 padding:18px;
@@ -114,9 +135,9 @@ display:none;
 z-index:1200;
 }
 
-.infoPanel.active{
-display:block;
-}
+.infoPanel.active{display:block;}
+
+*/
 
 .infoHeader{
 display:flex;
@@ -125,46 +146,34 @@ align-items:center;
 margin-bottom:8px;
 }
 
-.infoHeader span{
-cursor:pointer;
-opacity:0.6;
-}
+.infoHeader span{cursor:pointer;opacity:0.6;}
 
 .risk span{
-font-size:24px;
+font-size:26px;
 cursor:pointer;
 opacity:0.3;
 }
 
-.risk span.active{
+.risk span.active{opacity:1;}
+
+.rating span{
+font-size:26px;
+}
+
+.userRating span{
+font-size:18px;
+cursor:pointer;
+opacity:0.3;
+}
+
+.userRating span.active{
 opacity:1;
 }
 
-/* 📱 MOBILE FIX */
-
-@media (max-width:600px){
-
-.panel{
-width:100%;
-border-radius:20px 20px 0 0;
-}
-
-.infoPanel{
-right:10px;
-left:10px;
-width:auto;
-}
-
-.fab{
-width:70px;
-height:70px;
-font-size:32px;
-}
-
-input,select{
-font-size:16px;
-}
-
+.ratingLabel{
+font-size:12px;
+opacity:0.6;
+margin-top:6px;
 }
 
 </style>
@@ -192,17 +201,10 @@ font-size:16px;
 <input id="descInput" placeholder="Opis">
 
 <div id="riskBox">
-
 <p>Poziom przypału</p>
-
 <div class="risk" id="riskIcons">
-<span>🚨</span>
-<span>🚨</span>
-<span>🚨</span>
-<span>🚨</span>
-<span>🚨</span>
+<span>🚨</span><span>🚨</span><span>🚨</span><span>🚨</span><span>🚨</span>
 </div>
-
 </div>
 
 <button class="submit" id="startAdd">Wybierz punkt na mapie</button>
@@ -222,9 +224,33 @@ font-size:16px;
 <p id="infoDesc"></p>
 <p id="infoRisk"></p>
 
+<p>Średnia ocena:</p>
+<div class="rating" id="avgStars"></div>
+<p id="ratingStats"></p>
+
+<p class="ratingLabel">Twoja ocena</p>
+<div class="userRating" id="userStars">
+<span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span>
 </div>
 
-<script>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+
+const firebaseConfig = {
+apiKey: "AIza...",
+authDomain: "mapa-miejscowek.firebaseapp.com",
+projectId: "mapa-miejscowek",
+storageBucket: "mapa-miejscowek.appspot.com",
+messagingSenderId: "95333779353",
+appId: "1:95333779353:web:69e97f3b5aa3f98fa6f508"
+}
+
+const app = initializeApp(firebaseConfig)
+const db = getFirestore(app)
 
 const map=L.map('map').setView([52.2,19.2],6)
 
@@ -234,11 +260,30 @@ maxZoom:19
 
 let adding=false
 let riskLevel=1
+let currentSpot=null
+
+window.openPanel=()=>{panel.classList.add("active");overlay.style.display="block"}
+window.closePanel=()=>{panel.classList.remove("active");overlay.style.display="none"}
+window.closeInfo=()=>{infoPanel.classList.remove("active")}
+
+/* RISK */
+
+const riskIcons=document.querySelectorAll("#riskIcons span")
+
+riskIcons.forEach((icon,i)=>{
+icon.onclick=()=>{
+riskLevel=i+1
+riskIcons.forEach(x=>x.classList.remove("active"))
+for(let j=0;j<riskLevel;j++){riskIcons[j].classList.add("active")}
+}
+})
+
+/* POKAZUJ PRZYPAŁ TYLKO DLA PLENER */
 
 const typeSelect=document.getElementById("type")
 const riskBox=document.getElementById("riskBox")
 
-typeSelect.onchange=()=>{
+function updateRiskVisibility(){
 
 if(typeSelect.value==="plener"){
 riskBox.style.display="block"
@@ -248,63 +293,27 @@ riskBox.style.display="none"
 
 }
 
-function openPanel(){
-panel.classList.add("active")
-overlay.style.display="block"
-}
+typeSelect.addEventListener("change",updateRiskVisibility)
 
-function closePanel(){
-panel.classList.remove("active")
-overlay.style.display="none"
-}
+updateRiskVisibility()
 
-function closeInfo(){
-infoPanel.classList.remove("active")
-}
-
-const riskIcons=document.querySelectorAll("#riskIcons span")
-
-riskIcons.forEach((icon,i)=>{
-
-icon.onclick=()=>{
-
-riskLevel=i+1
-
-riskIcons.forEach(x=>x.classList.remove("active"))
-
-for(let j=0;j<riskLevel;j++){
-riskIcons[j].classList.add("active")
-}
-
-}
-
-})
+/* ADD MODE */
 
 document.getElementById("startAdd").onclick=()=>{
-
 const name=document.getElementById("nameInput").value
-
-if(!name){
-alert("Podaj nazwę miejsca")
-return
-}
-
+if(!name){alert("Podaj nazwę miejsca");return}
 adding=true
 closePanel()
-
 alert("Kliknij miejsce na mapie")
-
 }
 
 function getEmoji(type){
-
 if(type==="plener") return "🍾"
 if(type==="pub") return "🍻"
 if(type==="club") return "🍸"
-
 }
 
-function createMarker(data,save=true){
+function createMarker(data){
 
 const icon=L.divIcon({
 html:`<div style="font-size:28px">${getEmoji(data.type)}</div>`,
@@ -314,6 +323,8 @@ className:""
 const marker=L.marker([data.lat,data.lng],{icon}).addTo(map)
 
 marker.on("click",()=>{
+
+currentSpot=data
 
 map.setView([data.lat,data.lng],17)
 
@@ -326,49 +337,44 @@ infoDesc.innerText=data.desc
 if(data.type==="plener"){
 
 let riskHTML="Przypał: "
-
 for(let i=0;i<5;i++){
-
-if(i<data.risk){
-riskHTML+="🚨"
-}else{
-riskHTML+='<span style="opacity:0.3">🚨</span>'
+riskHTML+=i<data.risk?"🚨":'<span style="opacity:0.3">🚨</span>'
 }
-
-}
-
 infoRisk.innerHTML=riskHTML
 
 }else{
+
 infoRisk.innerHTML=""
+
 }
+
+updateRatingDisplay()
 
 })
 
-if(save){
-
-let all=JSON.parse(localStorage.getItem("spots")||"[]")
-
-all.push(data)
-
-localStorage.setItem("spots",JSON.stringify(all))
-
 }
 
-}
+/* MAP CLICK */
 
-map.on("click",(e)=>{
+map.on("click",async(e)=>{
 
 if(!adding) return
+
+const type=document.getElementById("type").value
 
 const data={
 lat:e.latlng.lat,
 lng:e.latlng.lng,
 name:document.getElementById("nameInput").value,
 desc:document.getElementById("descInput").value,
-type:document.getElementById("type").value,
-risk:riskLevel
+type:type,
+risk:type==="plener"?riskLevel:0,
+ratingSum:0,
+ratingCount:0
 }
+
+const docRef=await addDoc(collection(db,"spots"),data)
+data.id=docRef.id
 
 createMarker(data)
 
@@ -376,15 +382,83 @@ adding=false
 
 })
 
-function loadMarkers(){
+async function loadMarkers(){
 
-let all=JSON.parse(localStorage.getItem("spots")||"[]")
+const querySnapshot=await getDocs(collection(db,"spots"))
 
-all.forEach(m=>createMarker(m,false))
+querySnapshot.forEach((docSnap)=>{
+const data=docSnap.data()
+data.id=docSnap.id
+createMarker(data)
+})
 
 }
 
 loadMarkers()
+
+/* RATING */
+
+const userStars=document.querySelectorAll("#userStars span")
+
+userStars.forEach((star,i)=>{
+
+star.onclick=async()=>{
+
+if(!currentSpot) return
+
+let userRatings=JSON.parse(localStorage.getItem("ratings")||"{}")
+
+if(userRatings[currentSpot.id]){
+alert("Już oceniłeś to miejsce")
+return
+}
+
+const rating=i+1
+
+currentSpot.ratingSum+=rating
+currentSpot.ratingCount+=1
+
+await updateDoc(doc(db,"spots",currentSpot.id),{
+ratingSum:currentSpot.ratingSum,
+ratingCount:currentSpot.ratingCount
+})
+
+userRatings[currentSpot.id]=rating
+localStorage.setItem("ratings",JSON.stringify(userRatings))
+
+updateRatingDisplay()
+
+}
+
+})
+
+function updateRatingDisplay(){
+
+if(!currentSpot) return
+
+const avg=currentSpot.ratingCount
+? (currentSpot.ratingSum/currentSpot.ratingCount)
+:0
+
+const avgStars=document.getElementById("avgStars")
+avgStars.innerHTML=""
+
+for(let i=0;i<5;i++){
+avgStars.innerHTML+= i<Math.round(avg)?"⭐":"☆"
+}
+
+ratingStats.innerText=`${avg.toFixed(1)} / 5 (${currentSpot.ratingCount} ocen)`
+
+let userRatings=JSON.parse(localStorage.getItem("ratings")||"{}")
+
+userStars.forEach((s,i)=>{
+s.classList.remove("active")
+if(userRatings[currentSpot.id] && i<userRatings[currentSpot.id]){
+s.classList.add("active")
+}
+})
+
+}
 
 </script>
 
