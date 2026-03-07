@@ -18,9 +18,9 @@ body{margin:0;font-family:'Inter',sans-serif;background:#f8fafc;}
 
 .fab{
 position:absolute;
-bottom:30px;
-left:50%;
-transform:translateX(-50%);
+bottom:5%;
+left:5%;
+
 width:65px;
 height:65px;
 border-radius:50%;
@@ -58,8 +58,6 @@ box-shadow:0 -5px 30px rgba(0,0,0,0.15);
 
 .panel.active{bottom:0;}
 
-.panel h2{margin-top:0;text-align:center;}
-
 input,select{
 width:100%;
 padding:12px;
@@ -82,9 +80,6 @@ color:white;
 
 .close-btn{text-align:right;cursor:pointer;opacity:0.6;margin-bottom:10px;}
 
-
- /* DOMYŚLNIE (MOBILE) */
-
 .infoPanel{
 position:absolute;
 top:10px;
@@ -102,51 +97,12 @@ z-index:1200;
 
 .infoPanel.active{display:block;}
 
-
-/* DESKTOP */
-
-@media (min-width: 900px){
-
-.infoPanel{
-top:100px;
-left:auto;
-right:50px;
-transform:none;
-width:360px;
-padding:24px;
-border-radius:18px;
-}
-
-}
-
-
-
-/*
-.infoPanel{
-position:absolute;
-top:80px;
-right:20px;
-width:260px;
-background:white;
-padding:18px;
-border-radius:16px;
-box-shadow:0 10px 25px rgba(0,0,0,0.2);
-display:none;
-z-index:1200;
-}
-
-.infoPanel.active{display:block;}
-
-*/
-
 .infoHeader{
 display:flex;
 justify-content:space-between;
 align-items:center;
 margin-bottom:8px;
 }
-
-.infoHeader span{cursor:pointer;opacity:0.6;}
 
 .risk span{
 font-size:26px;
@@ -176,6 +132,67 @@ opacity:0.6;
 margin-top:6px;
 }
 
+.avgRatingRow{
+display:flex;
+align-items:center;
+gap:8px;
+margin-bottom:10px;
+flex-wrap:wrap;
+}
+
+.toggleRow{
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-bottom:10px;
+font-weight:600;
+}
+
+.switch{
+position:relative;
+display:inline-block;
+width:60px;
+height:30px;
+}
+
+.switch input{
+opacity:0;
+width:0;
+height:0;
+}
+
+.sliderToggle{
+position:absolute;
+cursor:pointer;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:#22c55e;
+transition:.3s;
+border-radius:30px;
+}
+
+.sliderToggle:before{
+position:absolute;
+content:"";
+height:24px;
+width:24px;
+left:3px;
+bottom:3px;
+background:white;
+transition:.3s;
+border-radius:50%;
+}
+
+input:checked + .sliderToggle{
+background:#ef4444;
+}
+
+input:checked + .sliderToggle:before{
+transform:translateX(30px);
+}
+
 </style>
 </head>
 
@@ -199,6 +216,17 @@ margin-top:6px;
 
 <input id="nameInput" placeholder="Nazwa miejsca">
 <input id="descInput" placeholder="Opis">
+
+<div id="legalToggle">
+<div class="toggleRow">
+<span id="toggleLabel">✅ Legalna</span>
+
+<label class="switch">
+<input type="checkbox" id="illegalToggle">
+<span class="sliderToggle"></span>
+</label>
+</div>
+</div>
 
 <div id="riskBox">
 <p>Poziom przypału</p>
@@ -224,11 +252,14 @@ margin-top:6px;
 <p id="infoDesc"></p>
 <p id="infoRisk"></p>
 
-<p>Średnia ocena:</p>
+<div class="avgRatingRow">
+<span>Średnia ocen:</span>
 <div class="rating" id="avgStars"></div>
-<p id="ratingStats"></p>
+<span id="ratingStats"></span>
+</div>
 
 <p class="ratingLabel">Twoja ocena</p>
+
 <div class="userRating" id="userStars">
 <span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span>
 </div>
@@ -254,9 +285,7 @@ const db = getFirestore(app)
 
 const map=L.map('map').setView([52.2,19.2],6)
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:19
-}).addTo(map)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map)
 
 let adding=false
 let riskLevel=1
@@ -265,8 +294,6 @@ let currentSpot=null
 window.openPanel=()=>{panel.classList.add("active");overlay.style.display="block"}
 window.closePanel=()=>{panel.classList.remove("active");overlay.style.display="none"}
 window.closeInfo=()=>{infoPanel.classList.remove("active")}
-
-/* RISK */
 
 const riskIcons=document.querySelectorAll("#riskIcons span")
 
@@ -278,26 +305,39 @@ for(let j=0;j<riskLevel;j++){riskIcons[j].classList.add("active")}
 }
 })
 
-/* POKAZUJ PRZYPAŁ TYLKO DLA PLENER */
-
 const typeSelect=document.getElementById("type")
+const illegalToggle=document.getElementById("illegalToggle")
+const toggleLabel=document.getElementById("toggleLabel")
 const riskBox=document.getElementById("riskBox")
+const legalToggle=document.getElementById("legalToggle")
 
-function updateRiskVisibility(){
+function updateUI(){
 
 if(typeSelect.value==="plener"){
+
+legalToggle.style.display="block"
+
+if(illegalToggle.checked){
+toggleLabel.innerText="🚨 Przypał"
 riskBox.style.display="block"
 }else{
+toggleLabel.innerText="✅ Legalna"
 riskBox.style.display="none"
 }
 
+}else{
+
+legalToggle.style.display="none"
+riskBox.style.display="none"
+
 }
 
-typeSelect.addEventListener("change",updateRiskVisibility)
+}
 
-updateRiskVisibility()
+illegalToggle.addEventListener("change",updateUI)
+typeSelect.addEventListener("change",updateUI)
 
-/* ADD MODE */
+updateUI()
 
 document.getElementById("startAdd").onclick=()=>{
 const name=document.getElementById("nameInput").value
@@ -326,21 +366,30 @@ marker.on("click",()=>{
 
 currentSpot=data
 
-map.setView([data.lat,data.lng],17)
-
 infoPanel.classList.add("active")
 
 infoName.innerText=data.name
 infoType.innerText="Typ: "+data.type
 infoDesc.innerText=data.desc
 
+map.flyTo([data.lat +0.001,data.lng],17)
+
 if(data.type==="plener"){
+
+if(data.illegal){
 
 let riskHTML="Przypał: "
 for(let i=0;i<5;i++){
 riskHTML+=i<data.risk?"🚨":'<span style="opacity:0.3">🚨</span>'
 }
+
 infoRisk.innerHTML=riskHTML
+
+}else{
+
+infoRisk.innerHTML="✅ Legalna miejscówka"
+
+}
 
 }else{
 
@@ -354,21 +403,21 @@ updateRatingDisplay()
 
 }
 
-/* MAP CLICK */
-
 map.on("click",async(e)=>{
 
 if(!adding) return
 
-const type=document.getElementById("type").value
+const type=typeSelect.value
+const isIllegal = type==="plener" && illegalToggle.checked
 
 const data={
 lat:e.latlng.lat,
 lng:e.latlng.lng,
-name:document.getElementById("nameInput").value,
-desc:document.getElementById("descInput").value,
+name:nameInput.value,
+desc:descInput.value,
 type:type,
-risk:type==="plener"?riskLevel:0,
+illegal:isIllegal,
+risk:isIllegal ? riskLevel : 0,
 ratingSum:0,
 ratingCount:0
 }
@@ -395,8 +444,6 @@ createMarker(data)
 }
 
 loadMarkers()
-
-/* RATING */
 
 const userStars=document.querySelectorAll("#userStars span")
 
