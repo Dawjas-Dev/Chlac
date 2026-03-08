@@ -2,512 +2,337 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Mapa Miejscówek</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+body, html {
+    margin:0; padding:0; height:100%; width:100%; 
+    overflow: hidden; font-family:'Inter',sans-serif; background:#f8fafc;
+}
+#map{height:100%; width:100%; z-index: 1;}
 
-*{box-sizing:border-box;}
-body{margin:0;font-family:'Inter',sans-serif;background:#f8fafc;}
-#map{height:100vh;}
+/* PRZYCISKI */
+.fab, .locate-btn, .ranking-btn {
+    position:absolute; border:none; cursor:pointer;
+    box-shadow:0 4px 15px rgba(0,0,0,0.2); z-index:1100;
+    display:flex; justify-content:center; align-items:center;
+    background: white; border-radius:50%;
+}
+.fab { bottom: 30px; left: 20px; width: 60px; height: 60px; font-size: 30px; background: linear-gradient(135deg,#f59e0b,#ef4444); color: white; }
+.locate-btn { bottom: 30px; right: 20px; width: 50px; height: 50px; font-size: 22px; }
+.ranking-btn { bottom: 30px; right: 85px; width: 50px; height: 50px; font-size: 22px; }
 
-.fab{
-position:absolute;
-bottom:5%;
-left:5%;
+/* PANELE */
+.overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); display:none; z-index:1200; }
+.bottom-panel {
+    position:absolute; bottom:-100%; left:0; width:100%;
+    background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index:1300; padding: 20px; padding-bottom: 40px;
+    border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+}
+.bottom-panel.active { bottom: 0; }
 
-width:65px;
-height:65px;
-border-radius:50%;
-border:none;
-font-size:30px;
-background:linear-gradient(135deg,#f59e0b,#ef4444);
-color:white;
-cursor:pointer;
-box-shadow:0 8px 25px rgba(0,0,0,0.25);
-z-index:1100;
+.flex-row-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+
+/* TOGGLE */
+.switch { position: relative; display: inline-block; width: 54px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #22c55e; transition: .4s; border-radius: 34px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 20px; width: 20px;
+    left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: #ef4444; }
+input:checked + .slider:before { transform: translateX(26px); }
+
+/* GWIAZDKI */
+.risk { display: flex; gap: 4px; }
+.risk span { font-size: 22px; opacity: 0.2; cursor: pointer; }
+.risk span.active { opacity: 1; }
+
+.stars-display span, .user-rating-box span { font-size: 26px; cursor: pointer; }
+.stars-display .filled, .user-rating-box .active { color: #f59e0b; }
+.stars-display .empty, .user-rating-box .empty { color: #e2e8f0; }
+
+/* RANKING */
+.ranking-list { max-height: 50vh; overflow-y: auto; }
+.ranking-item {
+    padding: 15px; border-radius: 12px; margin-bottom: 8px;
+    background: #f1f5f9; display: flex; flex-direction: column; cursor: pointer;
 }
 
-.overlay{
-position:absolute;
-inset:0;
-background:rgba(0,0,0,0.3);
-display:none;
-z-index:1000;
+.user-location-dot {
+    background: #3b82f6; width: 14px; height: 14px; border-radius: 50%;
+    border: 3px solid white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
 }
-
-.panel{
-position:absolute;
-bottom:-100%;
-left:50%;
-transform:translateX(-50%);
-width:95%;
-max-width:420px;
-padding:20px;
-border-radius:20px 20px 0 0;
-background:white;
-transition:0.4s;
-z-index:1200;
-box-shadow:0 -5px 30px rgba(0,0,0,0.15);
-}
-
-.panel.active{bottom:0;}
-
-input,select{
-width:100%;
-padding:12px;
-margin-bottom:10px;
-border-radius:12px;
-border:1px solid #e2e8f0;
-font-size:16px;
-}
-
-button.submit{
-width:100%;
-padding:12px;
-border-radius:12px;
-border:none;
-font-weight:600;
-cursor:pointer;
-background:linear-gradient(135deg,#f59e0b,#ef4444);
-color:white;
-}
-
-.close-btn{text-align:right;cursor:pointer;opacity:0.6;margin-bottom:10px;}
-
-.infoPanel{
-position:absolute;
-top:10px;
-left:50%;
-transform:translateX(-50%);
-width:92%;
-max-width:420px;
-background:white;
-padding:18px;
-border-radius:16px;
-box-shadow:0 10px 25px rgba(0,0,0,0.2);
-display:none;
-z-index:1200;
-}
-
-.infoPanel.active{display:block;}
-
-.infoHeader{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:8px;
-}
-
-.risk span{
-font-size:26px;
-cursor:pointer;
-opacity:0.3;
-}
-
-.risk span.active{opacity:1;}
-
-.rating span{
-font-size:26px;
-}
-
-.userRating span{
-font-size:18px;
-cursor:pointer;
-opacity:0.3;
-}
-
-.userRating span.active{
-opacity:1;
-}
-
-.ratingLabel{
-font-size:12px;
-opacity:0.6;
-margin-top:6px;
-}
-
-.avgRatingRow{
-display:flex;
-align-items:center;
-gap:8px;
-margin-bottom:10px;
-flex-wrap:wrap;
-}
-
-.toggleRow{
-display:flex;
-align-items:center;
-justify-content:space-between;
-margin-bottom:10px;
-font-weight:600;
-}
-
-.switch{
-position:relative;
-display:inline-block;
-width:60px;
-height:30px;
-}
-
-.switch input{
-opacity:0;
-width:0;
-height:0;
-}
-
-.sliderToggle{
-position:absolute;
-cursor:pointer;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:#22c55e;
-transition:.3s;
-border-radius:30px;
-}
-
-.sliderToggle:before{
-position:absolute;
-content:"";
-height:24px;
-width:24px;
-left:3px;
-bottom:3px;
-background:white;
-transition:.3s;
-border-radius:50%;
-}
-
-input:checked + .sliderToggle{
-background:#ef4444;
-}
-
-input:checked + .sliderToggle:before{
-transform:translateX(30px);
-}
-
+input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; font-size:16px; }
+.submit-btn { width:100%; padding:15px; border-radius:12px; border:none; font-weight:600; background: linear-gradient(135deg,#f59e0b,#ef4444); color:white; font-size: 16px; }
+.close-handle { width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: -10px auto 15px; }
 </style>
 </head>
-
 <body>
 
 <div id="map"></div>
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
 
-<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<button class="fab" onclick="openAddPanel()">＋</button>
+<button class="ranking-btn" onclick="openRanking()">🏆</button>
+<button class="locate-btn" onclick="locateUser()">📍</button>
 
-<div class="panel" id="panel">
-
-<div class="close-btn" onclick="closePanel()">✖ Zamknij</div>
-
-<h2>Dodaj miejscówkę</h2>
-
-<select id="type">
-<option value="plener">🍾 Plener</option>
-<option value="pub">🍻 Pub</option>
-<option value="club">🍸 Klub</option>
-</select>
-
-<input id="nameInput" placeholder="Nazwa miejsca">
-<input id="descInput" placeholder="Opis">
-
-<div id="legalToggle">
-<div class="toggleRow">
-<span id="toggleLabel">✅ Legalna</span>
-
-<label class="switch">
-<input type="checkbox" id="illegalToggle">
-<span class="sliderToggle"></span>
-</label>
-</div>
-</div>
-
-<div id="riskBox">
-<p>Poziom przypału</p>
-<div class="risk" id="riskIcons">
-<span>🚨</span><span>🚨</span><span>🚨</span><span>🚨</span><span>🚨</span>
-</div>
-</div>
-
-<button class="submit" id="startAdd">Wybierz punkt na mapie</button>
-
+<div class="bottom-panel" id="addPanel">
+    <div class="close-handle"></div>
+    <h2 style="margin-top:0">Nowa miejscówka</h2>
+    <select id="type" onchange="togglePlenerUI()">
+        <option value="plener">🍾 Plener</option>
+        <option value="pub">🍻 Pub</option>
+        <option value="club">🍸 Klub</option>
+    </select>
+    <input id="nameInput" placeholder="Nazwa miejsca">
+    <input id="descInput" placeholder="Krótki opis">
+    
+    <div id="plenerExtras">
+        <div class="flex-row-between">
+            <span id="toggleLabel" style="font-weight:600">✅ Legalna</span>
+            <label class="switch">
+                <input type="checkbox" id="illegalToggle" onchange="updateToggleUI()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div id="riskBox" style="display:none">
+            <div class="flex-row-between">
+                <span style="font-weight:600">Poziom przypału</span>
+                <div class="risk" id="riskIcons">
+                    <span>🚨</span><span>🚨</span><span>🚨</span><span>🚨</span><span>🚨</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="submit-btn" id="startAdd">Wybierz punkt na mapie</button>
 </div>
 
-<button class="fab" onclick="openPanel()">＋</button>
+<div class="bottom-panel" id="infoPanel">
+    <div class="close-handle"></div>
+    <div class="flex-row-between">
+        <h2 id="infoName" style="margin:0"></h2>
+        <span id="infoEmoji" style="font-size:30px"></span>
+    </div>
+    <p id="infoDesc" style="color:#64748b; margin: 10px 0;"></p>
+    <div id="infoRisk" style="margin-bottom:15px; font-weight:600"></div>
+    
+    <hr style="border:0; border-top:1px solid #f1f5f9; margin: 15px 0;">
+    
+    <div style="margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px;">TWOJA OCENA</div>
+    <div class="user-rating-box" id="userStars" style="margin-bottom: 20px;">
+        <span class="empty">★</span><span class="empty">★</span><span class="empty">★</span><span class="empty">★</span><span class="empty">★</span>
+    </div>
 
-<div class="infoPanel" id="infoPanel">
-
-<div class="infoHeader">
-<b id="infoName"></b>
-<span onclick="closeInfo()">✖</span>
+    <div class="flex-row-between" style="background: #f8fafc; padding: 12px; border-radius: 16px;">
+        <span style="font-size: 14px; font-weight: 600;">ŚREDNIA:</span>
+        <div style="text-align: right;">
+            <div class="stars-display" id="avgStars"></div>
+            <span id="ratingStats" style="font-size:12px; color:#94a3b8; font-weight:600;"></span>
+        </div>
+    </div>
 </div>
 
-<p id="infoType"></p>
-<p id="infoDesc"></p>
-<p id="infoRisk"></p>
-
-<div class="avgRatingRow">
-<span>Średnia ocen:</span>
-<div class="rating" id="avgStars"></div>
-<span id="ratingStats"></span>
-</div>
-
-<p class="ratingLabel">Twoja ocena</p>
-
-<div class="userRating" id="userStars">
-<span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span>
-</div>
-
+<div class="bottom-panel" id="rankingPanel">
+    <div class="close-handle"></div>
+    <h2 style="margin-top:0">Top w okolicy (5 km)</h2>
+    <div class="ranking-list" id="rankingList"></div>
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
 import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
 
-const firebaseConfig = {
-apiKey: "AIza...",
-authDomain: "mapa-miejscowek.firebaseapp.com",
-projectId: "mapa-miejscowek",
-storageBucket: "mapa-miejscowek.appspot.com",
-messagingSenderId: "95333779353",
-appId: "1:95333779353:web:69e97f3b5aa3f98fa6f508"
+const firebaseConfig = { apiKey: "AIza...", authDomain: "mapa-miejscowek.firebaseapp.com", projectId: "mapa-miejscowek", storageBucket: "mapa-miejscowek.appspot.com", messagingSenderId: "95333779353", appId: "1:95333779353:web:69e97f3b5aa3f98fa6f508" };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const map = L.map('map', { zoomControl: false }).setView([52.2, 19.2], 6);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+let adding = false, riskLevel = 1, currentSpot = null, userMarker = null, allSpots = [], userPos = null;
+
+window.closeAll = () => {
+    document.querySelectorAll('.bottom-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('overlay').style.display = "none";
+};
+
+window.openAddPanel = () => { 
+    closeAll(); 
+    document.getElementById('addPanel').classList.add('active'); 
+    document.getElementById('overlay').style.display="block"; 
+    togglePlenerUI(); 
+};
+
+window.togglePlenerUI = () => {
+    const type = document.getElementById('type').value;
+    document.getElementById('plenerExtras').style.display = (type === "plener") ? "block" : "none";
+};
+
+window.updateToggleUI = () => {
+    const isIllegal = document.getElementById('illegalToggle').checked;
+    document.getElementById('toggleLabel').innerText = isIllegal ? "🚨 Przypał" : "✅ Legalna";
+    document.getElementById('riskBox').style.display = isIllegal ? "block" : "none";
+};
+
+window.locateUser = () => map.locate({setView: true, maxZoom: 16});
+map.on('locationfound', (e) => {
+    userPos = e.latlng;
+    if(!userMarker) userMarker = L.marker(e.latlng, {icon: L.divIcon({className:'user-location-dot'})}).addTo(map);
+    else userMarker.setLatLng(e.latlng);
+});
+
+const riskIcons = document.querySelectorAll("#riskIcons span");
+riskIcons.forEach((s, i) => {
+    s.onclick = () => {
+        riskLevel = i + 1;
+        riskIcons.forEach((el, idx) => el.classList.toggle('active', idx < riskLevel));
+    };
+});
+
+document.getElementById('startAdd').onclick = () => {
+    if(!document.getElementById('nameInput').value) return alert("Podaj nazwę!");
+    adding = true; closeAll(); alert("Kliknij punkt na mapie");
+};
+
+map.on('click', async (e) => {
+    if(!adding) return;
+    const type = document.getElementById('type').value;
+    const isIllegal = type === "plener" && document.getElementById('illegalToggle').checked;
+    const data = {
+        lat: e.latlng.lat, lng: e.latlng.lng,
+        name: document.getElementById('nameInput').value,
+        desc: document.getElementById('descInput').value,
+        type: type, illegal: isIllegal, risk: isIllegal ? riskLevel : 0,
+        ratingSum: 0, ratingCount: 0
+    };
+    const docRef = await addDoc(collection(db, "spots"), data);
+    data.id = docRef.id;
+    createMarker(data);
+    allSpots.push(data); // Dodanie do listy rankingu
+    adding = false;
+});
+
+function createMarker(data) {
+    const marker = L.marker([data.lat, data.lng], {
+        icon: L.divIcon({ html: `<div style="font-size:25px">${getEmoji(data.type)}</div>`, className:''})
+    }).addTo(map);
+    marker.on('click', () => showSpotDetails(data));
 }
 
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
-
-const map=L.map('map').setView([52.2,19.2],6)
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map)
-
-let adding=false
-let riskLevel=1
-let currentSpot=null
-
-window.openPanel=()=>{panel.classList.add("active");overlay.style.display="block"}
-window.closePanel=()=>{panel.classList.remove("active");overlay.style.display="none"}
-window.closeInfo=()=>{infoPanel.classList.remove("active")}
-
-const riskIcons=document.querySelectorAll("#riskIcons span")
-
-riskIcons.forEach((icon,i)=>{
-icon.onclick=()=>{
-riskLevel=i+1
-riskIcons.forEach(x=>x.classList.remove("active"))
-for(let j=0;j<riskLevel;j++){riskIcons[j].classList.add("active")}
-}
-})
-
-const typeSelect=document.getElementById("type")
-const illegalToggle=document.getElementById("illegalToggle")
-const toggleLabel=document.getElementById("toggleLabel")
-const riskBox=document.getElementById("riskBox")
-const legalToggle=document.getElementById("legalToggle")
-
-function updateUI(){
-
-if(typeSelect.value==="plener"){
-
-legalToggle.style.display="block"
-
-if(illegalToggle.checked){
-toggleLabel.innerText="🚨 Przypał"
-riskBox.style.display="block"
-}else{
-toggleLabel.innerText="✅ Legalna"
-riskBox.style.display="none"
+function showSpotDetails(data) {
+    currentSpot = data;
+    closeAll();
+    const offset = window.innerWidth < 600 ? 0.005 : 0.002;
+    map.flyTo([data.lat - offset, data.lng], 16);
+    document.getElementById('infoName').innerText = data.name;
+    document.getElementById('infoEmoji').innerText = getEmoji(data.type);
+    document.getElementById('infoDesc').innerText = data.desc;
+    const riskDiv = document.getElementById('infoRisk');
+    if(data.illegal) {
+        riskDiv.innerHTML = "Przypał: " + "🚨".repeat(data.risk);
+        riskDiv.style.color = "#ef4444";
+    } else {
+        riskDiv.innerHTML = data.type === "plener" ? "✅ Legalna miejscówka" : "";
+        riskDiv.style.color = "#22c55e";
+    }
+    updateStarsUI();
+    document.getElementById('infoPanel').classList.add('active');
+    document.getElementById('overlay').style.display="block";
 }
 
-}else{
+function getEmoji(t) { return t==="plener"?"🍾":t==="pub"?"🍻":"🍸"; }
 
-legalToggle.style.display="none"
-riskBox.style.display="none"
+const userStars = document.querySelectorAll("#userStars span");
+userStars.forEach((s, i) => {
+    s.onclick = async () => {
+        let ratings = JSON.parse(localStorage.getItem('my_ratings') || "{}");
+        if(ratings[currentSpot.id]) return alert("Już oceniono!");
+        const val = i + 1;
+        currentSpot.ratingSum += val;
+        currentSpot.ratingCount += 1;
+        
+        // Aktualizacja allSpots lokalnie
+        const idx = allSpots.findIndex(x => x.id === currentSpot.id);
+        if(idx !== -1) allSpots[idx] = currentSpot;
 
+        await updateDoc(doc(db, "spots", currentSpot.id), { ratingSum: currentSpot.ratingSum, ratingCount: currentSpot.ratingCount });
+        ratings[currentSpot.id] = val;
+        localStorage.setItem('my_ratings', JSON.stringify(ratings));
+        updateStarsUI();
+    };
+});
+
+function updateStarsUI() {
+    const avg = currentSpot.ratingCount ? (currentSpot.ratingSum / currentSpot.ratingCount) : 0;
+    const roundedAvg = Math.round(avg);
+    
+    // Punkt 2: Puste gwiazdki w średniej
+    const avgStarsDiv = document.getElementById('avgStars');
+    avgStarsDiv.innerHTML = "";
+    for(let i=0; i<5; i++) {
+        const star = document.createElement('span');
+        star.innerText = "★";
+        star.className = i < roundedAvg ? "filled" : "empty";
+        avgStarsDiv.appendChild(star);
+    }
+    document.getElementById('ratingStats').innerText = `${avg.toFixed(1)}/5 (${currentSpot.ratingCount})`;
+    
+    const myRating = JSON.parse(localStorage.getItem('my_ratings') || "{}")[currentSpot.id] || 0;
+    userStars.forEach((s, i) => {
+        s.className = i < myRating ? "active" : "empty";
+        s.innerText = "★";
+    });
 }
 
+window.openRanking = () => {
+    if(!userPos) { alert("Włącz lokalizację 📍"); return; }
+    const list = document.getElementById('rankingList');
+    list.innerHTML = "";
+    
+    // Oblicz dystans i sortuj
+    const nearby = allSpots.map(s => ({
+        ...s, 
+        dist: userPos.distanceTo(L.latLng(s.lat, s.lng)), 
+        score: s.ratingCount ? s.ratingSum/s.ratingCount : 0
+    }))
+    .filter(s => s.dist <= 5000)
+    .sort((a,b) => b.score - a.score);
+
+    if(nearby.length === 0) {
+        list.innerHTML = "<p style='text-align:center; color:#94a3b8; padding:20px;'>Brak miejscówek w promieniu 5 km.</p>";
+    } else {
+        nearby.forEach(s => {
+            const item = document.createElement('div');
+            item.className = 'ranking-item';
+            item.innerHTML = `<strong>${getEmoji(s.type)} ${s.name}</strong><span style="font-size:13px; color:#64748b; margin-top:4px;">${s.score.toFixed(1)} ⭐ | ${(s.dist/1000).toFixed(1)} km stąd</span>`;
+            item.onclick = () => { showSpotDetails(s); };
+            list.appendChild(item);
+        });
+    }
+    
+    closeAll();
+    document.getElementById('rankingPanel').classList.add('active');
+    document.getElementById('overlay').style.display="block";
+};
+
+async function load() {
+    const snap = await getDocs(collection(db, "spots"));
+    allSpots = [];
+    snap.forEach(d => { const data = {...d.data(), id: d.id}; allSpots.push(data); createMarker(data); });
 }
-
-illegalToggle.addEventListener("change",updateUI)
-typeSelect.addEventListener("change",updateUI)
-
-updateUI()
-
-document.getElementById("startAdd").onclick=()=>{
-const name=document.getElementById("nameInput").value
-if(!name){alert("Podaj nazwę miejsca");return}
-adding=true
-closePanel()
-alert("Kliknij miejsce na mapie")
-}
-
-function getEmoji(type){
-if(type==="plener") return "🍾"
-if(type==="pub") return "🍻"
-if(type==="club") return "🍸"
-}
-
-function createMarker(data){
-
-const icon=L.divIcon({
-html:`<div style="font-size:28px">${getEmoji(data.type)}</div>`,
-className:""
-})
-
-const marker=L.marker([data.lat,data.lng],{icon}).addTo(map)
-
-marker.on("click",()=>{
-
-currentSpot=data
-
-infoPanel.classList.add("active")
-
-infoName.innerText=data.name
-infoType.innerText="Typ: "+data.type
-infoDesc.innerText=data.desc
-
-map.flyTo([data.lat +0.001,data.lng],17)
-
-if(data.type==="plener"){
-
-if(data.illegal){
-
-let riskHTML="Przypał: "
-for(let i=0;i<5;i++){
-riskHTML+=i<data.risk?"🚨":'<span style="opacity:0.3">🚨</span>'
-}
-
-infoRisk.innerHTML=riskHTML
-
-}else{
-
-infoRisk.innerHTML="✅ Legalna miejscówka"
-
-}
-
-}else{
-
-infoRisk.innerHTML=""
-
-}
-
-updateRatingDisplay()
-
-})
-
-}
-
-map.on("click",async(e)=>{
-
-if(!adding) return
-
-const type=typeSelect.value
-const isIllegal = type==="plener" && illegalToggle.checked
-
-const data={
-lat:e.latlng.lat,
-lng:e.latlng.lng,
-name:nameInput.value,
-desc:descInput.value,
-type:type,
-illegal:isIllegal,
-risk:isIllegal ? riskLevel : 0,
-ratingSum:0,
-ratingCount:0
-}
-
-const docRef=await addDoc(collection(db,"spots"),data)
-data.id=docRef.id
-
-createMarker(data)
-
-adding=false
-
-})
-
-async function loadMarkers(){
-
-const querySnapshot=await getDocs(collection(db,"spots"))
-
-querySnapshot.forEach((docSnap)=>{
-const data=docSnap.data()
-data.id=docSnap.id
-createMarker(data)
-})
-
-}
-
-loadMarkers()
-
-const userStars=document.querySelectorAll("#userStars span")
-
-userStars.forEach((star,i)=>{
-
-star.onclick=async()=>{
-
-if(!currentSpot) return
-
-let userRatings=JSON.parse(localStorage.getItem("ratings")||"{}")
-
-if(userRatings[currentSpot.id]){
-alert("Już oceniłeś to miejsce")
-return
-}
-
-const rating=i+1
-
-currentSpot.ratingSum+=rating
-currentSpot.ratingCount+=1
-
-await updateDoc(doc(db,"spots",currentSpot.id),{
-ratingSum:currentSpot.ratingSum,
-ratingCount:currentSpot.ratingCount
-})
-
-userRatings[currentSpot.id]=rating
-localStorage.setItem("ratings",JSON.stringify(userRatings))
-
-updateRatingDisplay()
-
-}
-
-})
-
-function updateRatingDisplay(){
-
-if(!currentSpot) return
-
-const avg=currentSpot.ratingCount
-? (currentSpot.ratingSum/currentSpot.ratingCount)
-:0
-
-const avgStars=document.getElementById("avgStars")
-avgStars.innerHTML=""
-
-for(let i=0;i<5;i++){
-avgStars.innerHTML+= i<Math.round(avg)?"⭐":"☆"
-}
-
-ratingStats.innerText=`${avg.toFixed(1)} / 5 (${currentSpot.ratingCount} ocen)`
-
-let userRatings=JSON.parse(localStorage.getItem("ratings")||"{}")
-
-userStars.forEach((s,i)=>{
-s.classList.remove("active")
-if(userRatings[currentSpot.id] && i<userRatings[currentSpot.id]){
-s.classList.add("active")
-}
-})
-
-}
-
+load();
 </script>
-
 </body>
 </html>
