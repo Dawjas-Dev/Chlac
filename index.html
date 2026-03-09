@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -11,72 +12,63 @@
 
 <style>
 *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
-body, html {
-    margin:0; padding:0; height:100%; width:100%; 
-    overflow: hidden; font-family:'Inter',sans-serif; background:#f8fafc;
-}
+body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; font-family:'Inter',sans-serif; background:#f8fafc; }
 #map{height:100%; width:100%; z-index: 1;}
 
-/* PRZYCISKI */
-.fab, .locate-btn, .ranking-btn {
-    position:absolute; border:none; cursor:pointer;
-    box-shadow:0 4px 15px rgba(0,0,0,0.2); z-index:1100;
-    display:flex; justify-content:center; align-items:center;
-    background: white; border-radius:50%;
+.fab, .locate-btn, .ranking-btn, .help-btn {
+    position:absolute; border:none; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); z-index:1100;
+    display:flex; justify-content:center; align-items:center; background: white; border-radius:50%; font-weight: bold;
 }
 .fab { bottom: 30px; left: 20px; width: 60px; height: 60px; font-size: 30px; background: linear-gradient(135deg,#f59e0b,#ef4444); color: white; }
 .locate-btn { bottom: 30px; right: 20px; width: 50px; height: 50px; font-size: 22px; }
 .ranking-btn { bottom: 30px; right: 85px; width: 50px; height: 50px; font-size: 22px; }
+.help-btn { top: 20px; right: 20px; width: 45px; height: 45px; font-size: 22px; color: #3b82f6; }
 
-/* PANELE */
 .overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); display:none; z-index:1200; }
 .bottom-panel {
-    position:absolute; bottom:-100%; left:0; width:100%;
-    background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    z-index:1300; padding: 20px; padding-bottom: 40px;
-    border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+    position:absolute; bottom:-100%; left:0; width:100%; background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index:1300; padding: 20px; padding-bottom: 40px; border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+    max-height: 85vh; overflow-y: auto;
 }
 .bottom-panel.active { bottom: 0; }
+.info-panel-compact { padding: 15px; padding-bottom: 25px; }
 
-.flex-row-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.center-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+    background: white; width: 90%; max-width: 400px; padding: 25px;
+    border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 1350; opacity: 0; visibility: hidden; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.center-modal.active { visibility: visible; opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-/* TOGGLE */
+.flex-row-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
 .switch { position: relative; display: inline-block; width: 54px; height: 28px; }
 .switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #22c55e; transition: .4s; border-radius: 34px;
-}
-.slider:before {
-    position: absolute; content: ""; height: 20px; width: 20px;
-    left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;
-}
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #22c55e; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: #ef4444; }
 input:checked + .slider:before { transform: translateX(26px); }
 
-/* GWIAZDKI */
 .risk { display: flex; gap: 4px; }
 .risk span { font-size: 22px; opacity: 0.2; cursor: pointer; }
 .risk span.active { opacity: 1; }
 
-.stars-display span, .user-rating-box span { font-size: 26px; cursor: pointer; }
+.stars-display span, .user-rating-box span { font-size: 24px; cursor: pointer; transition: 0.2s; }
 .stars-display .filled, .user-rating-box .active { color: #f59e0b; }
 .stars-display .empty, .user-rating-box .empty { color: #e2e8f0; }
 
-/* RANKING */
 .ranking-list { max-height: 50vh; overflow-y: auto; }
-.ranking-item {
-    padding: 15px; border-radius: 12px; margin-bottom: 8px;
-    background: #f1f5f9; display: flex; flex-direction: column; cursor: pointer;
-}
+.ranking-item { padding: 15px; border-radius: 12px; margin-bottom: 8px; background: #f1f5f9; display: flex; flex-direction: column; cursor: pointer; }
+.user-location-dot { background: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
 
-.user-location-dot {
-    background: #3b82f6; width: 14px; height: 14px; border-radius: 50%;
-    border: 3px solid white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
-}
-input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; font-size:16px; }
-.submit-btn { width:100%; padding:15px; border-radius:12px; border:none; font-weight:600; background: linear-gradient(135deg,#f59e0b,#ef4444); color:white; font-size: 16px; }
-.close-handle { width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: -10px auto 15px; }
+input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; font-size:16px; outline:none; }
+.submit-btn { width:100%; padding:15px; border-radius:12px; border:none; font-weight:600; background: linear-gradient(135deg,#f59e0b,#ef4444); color:white; font-size: 16px; cursor: pointer; }
+.close-handle { width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: -5px auto 15px; cursor: pointer; }
+
+.comment-box { background: #f1f5f9; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: flex-start;}
+.action-icon { cursor: pointer; opacity: 0.7; transition: 0.2s; }
+.action-icon:hover { opacity: 1; transform: scale(1.1); }
 </style>
 </head>
 <body>
@@ -87,9 +79,34 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
 <button class="fab" onclick="openAddPanel()">＋</button>
 <button class="ranking-btn" onclick="openRanking()">🏆</button>
 <button class="locate-btn" onclick="locateUser()">📍</button>
+<button class="help-btn" onclick="openHelpPanel()">❓</button>
+
+<div class="center-modal" id="helpPanel">
+    <div style="text-align:right;"><span style="font-size:24px; cursor:pointer; color:#94a3b8;" onclick="closeAll()">×</span></div>
+    <h2 style="margin-top:0; color:#1e293b;">O co tu chodzi?</h2>
+    <p style="color:#475569; line-height:1.5;"><strong>📍 Dodawanie:</strong> Kliknij ikonę +, wybierz typ miejsca, a następnie kliknij na mapę.</p>
+    <p style="color:#475569; line-height:1.5;"><strong>⭐ Oceny:</strong> Każda miejscówka ma ocenę od 1 do 5. Głosuj!</p>
+    <p style="color:#475569; line-height:1.5;"><strong>💬 Komentarze:</strong> Opisuj bieżący stan miejsca pod panelem informacji.</p>
+    <p style="color:#475569; line-height:1.5;"><strong>⚠️ Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
+</div>
+
+<div class="center-modal" id="reportPanel">
+    <h2 style="margin-top:0; font-size:18px; color:#ef4444;">🚨 Zgłoś nadużycie</h2>
+    <p style="font-size:14px; color:#64748b; margin-bottom: 15px;">Wybierz powód zgłoszenia. Administracja zajmie się tym wkrótce.</p>
+    <select id="reportReason">
+        <option value="spam">Spam / Wulgaryzmy</option>
+        <option value="fake">Fałszywe miejsce / Nie istnieje</option>
+        <option value="danger">Niebezpieczeństwo</option>
+        <option value="other">Inne</option>
+    </select>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button onclick="closeAll()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#e2e8f0; font-weight:bold; cursor:pointer;">Anuluj</button>
+        <button onclick="submitReport()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#ef4444; color:white; font-weight:bold; cursor:pointer;">Wyślij</button>
+    </div>
+</div>
 
 <div class="bottom-panel" id="addPanel">
-    <div class="close-handle"></div>
+    <div class="close-handle" onclick="closeAll()"></div>
     <h2 style="margin-top:0">Nowa miejscówka</h2>
     <select id="type" onchange="togglePlenerUI()">
         <option value="plener">🍾 Plener</option>
@@ -119,66 +136,112 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
     <button class="submit-btn" id="startAdd">Wybierz punkt na mapie</button>
 </div>
 
-<div class="bottom-panel" id="infoPanel">
-    <div class="close-handle"></div>
-    <div class="flex-row-between">
-        <h2 id="infoName" style="margin:0"></h2>
-        <span id="infoEmoji" style="font-size:30px"></span>
+<div class="bottom-panel info-panel-compact" id="infoPanel">
+    <div class="close-handle" onclick="closeAll()"></div>
+    <div class="flex-row-between" style="margin-bottom: 4px;">
+        <div style="display:flex; align-items:center; gap: 8px;">
+            <span id="infoEmoji" style="font-size:26px"></span>
+            <h2 id="infoName" style="margin:0; font-size: 20px;"></h2>
+        </div>
+        <span class="action-icon" id="reportSpotBtn" style="font-size: 14px; padding: 5px;" title="Zgłoś to miejsce">⚠️</span>
     </div>
-    <p id="infoDesc" style="color:#64748b; margin: 10px 0;"></p>
-    <div id="infoRisk" style="margin-bottom:15px; font-weight:600"></div>
+    <p id="infoDesc" style="color:#64748b; margin: 4px 0 10px; font-size: 14px;"></p>
+    <div id="infoRisk" style="margin-bottom:10px; font-weight:600; font-size: 14px; display: flex; align-items: center;"></div>
     
-    <hr style="border:0; border-top:1px solid #f1f5f9; margin: 15px 0;">
+    <hr style="border:0; border-top:1px solid #f1f5f9; margin: 12px 0;">
     
-    <div style="margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px;">TWOJA OCENA</div>
-    <div class="user-rating-box" id="userStars" style="margin-bottom: 20px;">
-        <span class="empty">★</span><span class="empty">★</span><span class="empty">★</span><span class="empty">★</span><span class="empty">★</span>
-    </div>
-
-    <div class="flex-row-between" style="background: #f8fafc; padding: 12px; border-radius: 16px;">
-        <span style="font-size: 14px; font-weight: 600;">ŚREDNIA:</span>
-        <div style="text-align: right;">
-            <div class="stars-display" id="avgStars"></div>
-            <span id="ratingStats" style="font-size:12px; color:#94a3b8; font-weight:600;"></span>
+    <div class="flex-row-between" style="margin-bottom: 12px;">
+        <span style="font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px;">TWOJA OCENA:</span>
+        <div class="user-rating-box" id="userStars">
+            <span class="empty">★</span><span class="empty">★</span><span class="empty">★</span><span class="empty">★</span><span class="empty">★</span>
         </div>
     </div>
+
+    <div class="flex-row-between" style="background: #f8fafc; padding: 10px 12px; border-radius: 12px; margin-bottom: 15px;">
+        <span style="font-size: 13px; font-weight: 600;">ŚREDNIA:</span>
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+            <div class="stars-display" id="avgStars" style="line-height: 1;"></div>
+            <span id="ratingStats" style="font-size:11px; color:#94a3b8; font-weight:600; margin-top: 2px;"></span>
+        </div>
+    </div>
+
+    <hr style="border:0; border-top:1px solid #f1f5f9; margin: 15px 0;">
+    <h3 style="margin: 0 0 10px 0; font-size: 16px;">Komentarze</h3>
+    
+    <div id="commentsList" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px;"></div>
+    
+    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <input id="newComment" placeholder="Napisz coś..." style="margin-bottom: 0; flex: 1; padding: 12px; font-size: 14px;">
+        <button onclick="addComment()" style="background: #3b82f6; color: white; border: none; border-radius: 12px; padding: 0 15px; font-weight: bold; cursor:pointer;">Wyślij</button>
+    </div>
+
+    <button id="deleteSpotBtn" onclick="deleteSpot()" style="width:100%; padding:14px; border-radius:12px; border:none; font-weight:600; background: #ef4444; color:white; font-size: 15px; display:none; cursor:pointer;">🗑️ Usuń tę miejscówkę</button>
 </div>
 
 <div class="bottom-panel" id="rankingPanel">
-    <div class="close-handle"></div>
+    <div class="close-handle" onclick="closeAll()"></div>
     <h2 style="margin-top:0">Top w okolicy (5 km)</h2>
     <div class="ranking-list" id="rankingList"></div>
 </div>
 
 <script type="module">
+// Dodano "query" i "where" dla nowej optymalizacji
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
-import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
 
 const firebaseConfig = { apiKey: "AIza...", authDomain: "mapa-miejscowek.firebaseapp.com", projectId: "mapa-miejscowek", storageBucket: "mapa-miejscowek.appspot.com", messagingSenderId: "95333779353", appId: "1:95333779353:web:69e97f3b5aa3f98fa6f508" };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let myUid = localStorage.getItem('my_uid');
+if (!myUid) { myUid = 'user_' + Math.random().toString(36).substring(2, 15); localStorage.setItem('my_uid', myUid); }
+
 const map = L.map('map', { zoomControl: false }).setView([52.2, 19.2], 6);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-let adding = false, riskLevel = 1, currentSpot = null, userMarker = null, allSpots = [], userPos = null;
+let adding = false, riskLevel = 1, currentSpot = null, userMarker = null;
+let allSpots = []; 
+let spotMarkers = {}; 
+let userPos = null;
+let reportTarget = { type: null, id: null };
+
+// NOWOŚĆ: Przechowuje ID już pobranych miejscówek w ramach tej sesji przeglądarki
+const loadedSpotIds = new Set();
 
 window.closeAll = () => {
     document.querySelectorAll('.bottom-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.center-modal').forEach(m => m.classList.remove('active'));
     document.getElementById('overlay').style.display = "none";
 };
 
-window.openAddPanel = () => { 
-    closeAll(); 
-    document.getElementById('addPanel').classList.add('active'); 
-    document.getElementById('overlay').style.display="block"; 
-    togglePlenerUI(); 
+window.openHelpPanel = () => { closeAll(); document.getElementById('overlay').style.display = "block"; document.getElementById('helpPanel').classList.add('active'); };
+
+window.openReportModal = (type, targetId) => {
+    const reportedItems = JSON.parse(localStorage.getItem('my_reports') || "[]");
+    if(reportedItems.includes(targetId)) { alert("Już zgłosiłeś ten element. Dziękujemy!"); return; }
+
+    closeAll();
+    reportTarget = { type, id: targetId };
+    document.getElementById('overlay').style.display = "block";
+    document.getElementById('reportPanel').classList.add('active');
 };
 
-window.togglePlenerUI = () => {
-    const type = document.getElementById('type').value;
-    document.getElementById('plenerExtras').style.display = (type === "plener") ? "block" : "none";
+window.submitReport = async () => {
+    const reason = document.getElementById('reportReason').value;
+    const reportData = { type: reportTarget.type, targetId: reportTarget.id, reason: reason, reportedBy: myUid, timestamp: new Date().toISOString() };
+    await addDoc(collection(db, "reports"), reportData);
+
+    const reportedItems = JSON.parse(localStorage.getItem('my_reports') || "[]");
+    reportedItems.push(reportTarget.id);
+    localStorage.setItem('my_reports', JSON.stringify(reportedItems));
+
+    closeAll();
+    alert("Zgłoszenie wysłane. Dziękujemy za pomoc!");
 };
+
+window.openAddPanel = () => { closeAll(); document.getElementById('addPanel').classList.add('active'); document.getElementById('overlay').style.display="block"; togglePlenerUI(); };
+
+window.togglePlenerUI = () => { document.getElementById('plenerExtras').style.display = (document.getElementById('type').value === "plener") ? "block" : "none"; };
 
 window.updateToggleUI = () => {
     const isIllegal = document.getElementById('illegalToggle').checked;
@@ -194,12 +257,7 @@ map.on('locationfound', (e) => {
 });
 
 const riskIcons = document.querySelectorAll("#riskIcons span");
-riskIcons.forEach((s, i) => {
-    s.onclick = () => {
-        riskLevel = i + 1;
-        riskIcons.forEach((el, idx) => el.classList.toggle('active', idx < riskLevel));
-    };
-});
+riskIcons.forEach((s, i) => { s.onclick = () => { riskLevel = i + 1; riskIcons.forEach((el, idx) => el.classList.toggle('active', idx < riskLevel)); }; });
 
 document.getElementById('startAdd').onclick = () => {
     if(!document.getElementById('nameInput').value) return alert("Podaj nazwę!");
@@ -207,20 +265,23 @@ document.getElementById('startAdd').onclick = () => {
 };
 
 map.on('click', async (e) => {
-    if(!adding) return;
+    if(!adding) { closeAll(); return; }
+    
     const type = document.getElementById('type').value;
     const isIllegal = type === "plener" && document.getElementById('illegalToggle').checked;
+    
     const data = {
         lat: e.latlng.lat, lng: e.latlng.lng,
-        name: document.getElementById('nameInput').value,
-        desc: document.getElementById('descInput').value,
+        name: document.getElementById('nameInput').value, desc: document.getElementById('descInput').value,
         type: type, illegal: isIllegal, risk: isIllegal ? riskLevel : 0,
-        ratingSum: 0, ratingCount: 0
+        ratingSum: 0, ratingCount: 0, creatorId: myUid, comments: []
     };
     const docRef = await addDoc(collection(db, "spots"), data);
     data.id = docRef.id;
+    
+    loadedSpotIds.add(data.id); // Dodajemy do sesyjnej pamięci
     createMarker(data);
-    allSpots.push(data); // Dodanie do listy rankingu
+    allSpots.push(data); 
     adding = false;
 });
 
@@ -228,29 +289,116 @@ function createMarker(data) {
     const marker = L.marker([data.lat, data.lng], {
         icon: L.divIcon({ html: `<div style="font-size:25px">${getEmoji(data.type)}</div>`, className:''})
     }).addTo(map);
+    
+    spotMarkers[data.id] = marker;
     marker.on('click', () => showSpotDetails(data));
 }
 
 function showSpotDetails(data) {
     currentSpot = data;
-    closeAll();
-    const offset = window.innerWidth < 600 ? 0.005 : 0.002;
+    closeAll(); 
+    
+    const offset = window.innerWidth < 600 ? 0.007 : 0.002; 
     map.flyTo([data.lat - offset, data.lng], 16);
+    
     document.getElementById('infoName').innerText = data.name;
     document.getElementById('infoEmoji').innerText = getEmoji(data.type);
     document.getElementById('infoDesc').innerText = data.desc;
+    
+    // NAPRAWA ZGŁASZANIA: Przypisanie akcji bezpośrednio z JavaScriptu
+    document.getElementById('reportSpotBtn').onclick = () => openReportModal('spot', data.id);
+    
     const riskDiv = document.getElementById('infoRisk');
     if(data.illegal) {
-        riskDiv.innerHTML = "Przypał: " + "🚨".repeat(data.risk);
-        riskDiv.style.color = "#ef4444";
+        let sirensHTML = "";
+        for(let i = 0; i < 5; i++) {
+            const opacity = i < data.risk ? "1" : "0.2";
+            sirensHTML += `<span style="font-size: 20px; opacity: ${opacity}; margin-right: 2px;">🚨</span>`;
+        }
+        riskDiv.innerHTML = `<span style="color: #ef4444; margin-right: 8px;">Przypał:</span> <div style="display:flex;">${sirensHTML}</div>`;
     } else {
         riskDiv.innerHTML = data.type === "plener" ? "✅ Legalna miejscówka" : "";
         riskDiv.style.color = "#22c55e";
     }
+    
     updateStarsUI();
+    renderComments();
+    
+    document.getElementById('deleteSpotBtn').style.display = (currentSpot.creatorId === myUid) ? "block" : "none";
     document.getElementById('infoPanel').classList.add('active');
-    document.getElementById('overlay').style.display="block";
 }
+
+function renderComments() {
+    const list = document.getElementById('commentsList');
+    list.innerHTML = "";
+    
+    const comments = currentSpot.comments || [];
+    if(comments.length === 0) { list.innerHTML = "<div style='color:#94a3b8; font-size:13px;'>Brak komentarzy. Bądź pierwszy!</div>"; return; }
+    
+    comments.forEach(c => {
+        const cDiv = document.createElement('div');
+        cDiv.className = "comment-box";
+        
+        const textSpan = document.createElement('span');
+        textSpan.innerText = c.text;
+        textSpan.style.flex = "1";
+        cDiv.appendChild(textSpan);
+        
+        if(c.creatorId === myUid) {
+            const delIcon = document.createElement('span');
+            delIcon.className = "action-icon"; delIcon.innerText = "🗑️"; delIcon.title = "Usuń komentarz";
+            delIcon.style.marginLeft = "10px";
+            delIcon.onclick = () => deleteComment(c.id);
+            cDiv.appendChild(delIcon);
+        } else {
+            const reportIcon = document.createElement('span');
+            reportIcon.className = "action-icon"; reportIcon.innerText = "⚠️"; reportIcon.title = "Zgłoś komentarz";
+            reportIcon.style.marginLeft = "10px";
+            reportIcon.onclick = () => openReportModal('comment', c.id);
+            cDiv.appendChild(reportIcon);
+        }
+        
+        list.appendChild(cDiv);
+    });
+}
+
+window.addComment = async () => {
+    const input = document.getElementById('newComment');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    const comment = { id: Date.now().toString(), text: text, creatorId: myUid };
+    const updatedComments = [...(currentSpot.comments || []), comment];
+    
+    await updateDoc(doc(db, "spots", currentSpot.id), { comments: updatedComments });
+    
+    currentSpot.comments = updatedComments;
+    input.value = "";
+    renderComments();
+    
+    const idx = allSpots.findIndex(x => x.id === currentSpot.id);
+    if(idx !== -1) allSpots[idx].comments = updatedComments;
+};
+
+window.deleteComment = async (commentId) => {
+    if(!confirm("Usunąć ten komentarz?")) return;
+    const updatedComments = currentSpot.comments.filter(c => c.id !== commentId);
+    await updateDoc(doc(db, "spots", currentSpot.id), { comments: updatedComments });
+    currentSpot.comments = updatedComments;
+    renderComments();
+    
+    const idx = allSpots.findIndex(x => x.id === currentSpot.id);
+    if(idx !== -1) allSpots[idx].comments = updatedComments;
+};
+
+window.deleteSpot = async () => {
+    if(!confirm("Na pewno chcesz całkowicie usunąć tę miejscówkę?")) return;
+    await deleteDoc(doc(db, "spots", currentSpot.id));
+    
+    if(spotMarkers[currentSpot.id]) { map.removeLayer(spotMarkers[currentSpot.id]); delete spotMarkers[currentSpot.id]; }
+    allSpots = allSpots.filter(s => s.id !== currentSpot.id);
+    closeAll();
+};
 
 function getEmoji(t) { return t==="plener"?"🍾":t==="pub"?"🍻":"🍸"; }
 
@@ -260,10 +408,8 @@ userStars.forEach((s, i) => {
         let ratings = JSON.parse(localStorage.getItem('my_ratings') || "{}");
         if(ratings[currentSpot.id]) return alert("Już oceniono!");
         const val = i + 1;
-        currentSpot.ratingSum += val;
-        currentSpot.ratingCount += 1;
+        currentSpot.ratingSum += val; currentSpot.ratingCount += 1;
         
-        // Aktualizacja allSpots lokalnie
         const idx = allSpots.findIndex(x => x.id === currentSpot.id);
         if(idx !== -1) allSpots[idx] = currentSpot;
 
@@ -276,63 +422,78 @@ userStars.forEach((s, i) => {
 
 function updateStarsUI() {
     const avg = currentSpot.ratingCount ? (currentSpot.ratingSum / currentSpot.ratingCount) : 0;
-    const roundedAvg = Math.round(avg);
-    
-    // Punkt 2: Puste gwiazdki w średniej
     const avgStarsDiv = document.getElementById('avgStars');
     avgStarsDiv.innerHTML = "";
     for(let i=0; i<5; i++) {
-        const star = document.createElement('span');
-        star.innerText = "★";
-        star.className = i < roundedAvg ? "filled" : "empty";
+        const star = document.createElement('span'); star.innerText = "★";
+        star.className = i < Math.round(avg) ? "filled" : "empty";
         avgStarsDiv.appendChild(star);
     }
     document.getElementById('ratingStats').innerText = `${avg.toFixed(1)}/5 (${currentSpot.ratingCount})`;
     
     const myRating = JSON.parse(localStorage.getItem('my_ratings') || "{}")[currentSpot.id] || 0;
-    userStars.forEach((s, i) => {
-        s.className = i < myRating ? "active" : "empty";
-        s.innerText = "★";
-    });
+    userStars.forEach((s, i) => { s.className = i < myRating ? "active" : "empty"; s.innerText = "★"; });
 }
 
 window.openRanking = () => {
     if(!userPos) { alert("Włącz lokalizację 📍"); return; }
-    const list = document.getElementById('rankingList');
-    list.innerHTML = "";
+    const list = document.getElementById('rankingList'); list.innerHTML = "";
     
-    // Oblicz dystans i sortuj
-    const nearby = allSpots.map(s => ({
-        ...s, 
-        dist: userPos.distanceTo(L.latLng(s.lat, s.lng)), 
-        score: s.ratingCount ? s.ratingSum/s.ratingCount : 0
-    }))
-    .filter(s => s.dist <= 5000)
-    .sort((a,b) => b.score - a.score);
+    const nearby = allSpots.map(s => ({ ...s, dist: userPos.distanceTo(L.latLng(s.lat, s.lng)), score: s.ratingCount ? s.ratingSum/s.ratingCount : 0 }))
+    .filter(s => s.dist <= 5000).sort((a,b) => b.score - a.score);
 
-    if(nearby.length === 0) {
-        list.innerHTML = "<p style='text-align:center; color:#94a3b8; padding:20px;'>Brak miejscówek w promieniu 5 km.</p>";
-    } else {
+    if(nearby.length === 0) list.innerHTML = "<p style='text-align:center; color:#94a3b8; padding:20px;'>Brak miejscówek w promieniu 5 km.</p>";
+    else {
         nearby.forEach(s => {
-            const item = document.createElement('div');
-            item.className = 'ranking-item';
+            const item = document.createElement('div'); item.className = 'ranking-item';
             item.innerHTML = `<strong>${getEmoji(s.type)} ${s.name}</strong><span style="font-size:13px; color:#64748b; margin-top:4px;">${s.score.toFixed(1)} ⭐ | ${(s.dist/1000).toFixed(1)} km stąd</span>`;
-            item.onclick = () => { showSpotDetails(s); };
+            item.onclick = () => showSpotDetails(s);
             list.appendChild(item);
         });
     }
-    
-    closeAll();
-    document.getElementById('rankingPanel').classList.add('active');
-    document.getElementById('overlay').style.display="block";
+    closeAll(); document.getElementById('rankingPanel').classList.add('active'); document.getElementById('overlay').style.display="block";
 };
 
-async function load() {
-    const snap = await getDocs(collection(db, "spots"));
-    allSpots = [];
-    snap.forEach(d => { const data = {...d.data(), id: d.id}; allSpots.push(data); createMarker(data); });
+// --- NOWY SYSTEM OPTYMALIZACJI: Pobieranie na podstawie granic widoku ---
+async function fetchSpotsInView() {
+    // Pobieramy granice ekranu (Bounding Box)
+    const bounds = map.getBounds();
+    const minLat = bounds.getSouth();
+    const maxLat = bounds.getNorth();
+    const minLng = bounds.getWest();
+    const maxLng = bounds.getEast();
+
+    // Żeby nie obciążać Firebase podwójnym indeksem, filtrujemy po 'lat' na serwerze,
+    // a po 'lng' u nas w przeglądarce (bardzo efektywne)
+    const q = query(
+        collection(db, "spots"),
+        where("lat", ">=", minLat),
+        where("lat", "<=", maxLat)
+    );
+
+    const snap = await getDocs(q);
+
+    snap.forEach(d => {
+        // Ignorujemy miejscówki, które już mamy załadowane na mapie
+        if (loadedSpotIds.has(d.id)) return; 
+
+        const data = { ...d.data(), id: d.id };
+        
+        // Lokalny filtr dla długości geograficznej (longitude)
+        if (data.lng >= minLng && data.lng <= maxLng) {
+            loadedSpotIds.add(data.id);
+            allSpots.push(data);
+            createMarker(data);
+        }
+    });
 }
-load();
+
+// Uruchamiamy pobieranie od razu po załadowaniu...
+fetchSpotsInView();
+
+// ...oraz za każdym razem, gdy użytkownik skończy przesuwać lub zoomować mapę!
+map.on('moveend', fetchSpotsInView);
+
 </script>
 </body>
 </html>
