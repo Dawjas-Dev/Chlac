@@ -11,9 +11,9 @@
 
     "icons": [
     {
-      "src": "icon-512.png",
+      "src": "Logo2 — 512x512.jpg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpg"
     }
   ]
 }
