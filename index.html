@@ -216,8 +216,18 @@ const savedLat = localStorage.getItem('map_lat') || 52.2;
 const savedLng = localStorage.getItem('map_lng') || 19.2;
 const savedZoom = localStorage.getItem('map_zoom') || 6;
 
-const map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+    ///
+document.addEventListener("DOMContentLoaded", function() {
+ var map = L.map('map').setView([savedLat, savedLng], savedZoom);
+
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+ }).addTo(map);
+});    
+
+//const map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
+//L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
 // Nasłuchiwanie zmian pozycji mapy i zapis do Cache
 map.on('moveend', () => {
