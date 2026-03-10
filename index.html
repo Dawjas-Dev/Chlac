@@ -27,7 +27,7 @@ body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; fon
 .bottom-panel {
     position:absolute; bottom:-100%; left:0; width:100%; background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index:1300; padding: 20px; padding-bottom: 40px; border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
-    max-height: 50vh; overflow-y: auto;
+    max-height: 85vh; overflow-y: auto;
 }
 .bottom-panel.active { bottom: 0; }
 .info-panel-compact { padding: 15px; padding-bottom: 25px; }
@@ -40,7 +40,6 @@ body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; fon
 }
 .center-modal.active { visibility: visible; opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-/* NOWY ALERT */
 .modern-alert {
     position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
     background: #1e293b; color: white; padding: 14px 24px; border-radius: 30px;
@@ -100,9 +99,6 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
     <p style="color:#475569; line-height:1.5;"><strong>⭐ Oceny:</strong> Każda miejscówka ma ocenę od 1 do 5. Głosuj!</p>
     <p style="color:#475569; line-height:1.5;"><strong>💬 Komentarze:</strong> Opisuj bieżący stan miejsca pod panelem informacji.</p>
     <p style="color:#475569; line-height:1.5;"><strong>⚠️ Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
-    <p style="color:#475569; line-height:1.5;"><strong>XD Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
-    <p style="color:#475569; line-height:1.5;"><strong>s⚠️ Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
-    <p style="color:#475569; line-height:1.5;"><strong>Kontakt : dawjasdev@gmail.com</strong>  </p>
 </div>
 
 <div class="center-modal" id="reportPanel">
@@ -200,7 +196,6 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
 </div>
 
 <script type="module">
-// Zmienione importy, dodano getDoc i setDoc do obsługi wersji
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
 import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
 
@@ -211,15 +206,18 @@ const db = getFirestore(app);
 let myUid = localStorage.getItem('my_uid');
 if (!myUid) { myUid = 'user_' + Math.random().toString(36).substring(2, 15); localStorage.setItem('my_uid', myUid); }
 
-// Zapisywanie i odczytywanie ostatniej lokalizacji mapy
 const savedLat = localStorage.getItem('map_lat') || 52.2;
 const savedLng = localStorage.getItem('map_lng') || 19.2;
 const savedZoom = localStorage.getItem('map_zoom') || 6;
 
 const map = L.map('map', { zoomControl: false }).setView([savedLat, savedLng], savedZoom);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-// Nasłuchiwanie zmian pozycji mapy i zapis do Cache
+// ZMIANA: Standardowa mapa OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
 map.on('moveend', () => {
     const center = map.getCenter();
     localStorage.setItem('map_lat', center.lat);
@@ -233,17 +231,15 @@ let spotMarkers = {};
 let userPos = null;
 let reportTarget = { type: null, id: null };
 
-// --- NOWY SYSTEM OPTYMALIZACJI: CACHE + WERSJONOWANIE ---
 async function updateGlobalDataVersion() {
-    // Funkcja wywoływana po każdej modyfikacji (dodanie, usunięcie, komentarz), 
-    // aby inni użytkownicy wiedzieli, że trzeba odświeżyć cache.
-    const newVersion = Date.now().toString();
-    await setDoc(doc(db, "system", "version"), { v: newVersion });
-    localStorage.setItem('spots_version', newVersion); // aktualizujemy też własny cache
+    try {
+        const newVersion = Date.now().toString();
+        await setDoc(doc(db, "system", "version"), { v: newVersion });
+        localStorage.setItem('spots_version', newVersion);
+    } catch(e) { console.log("Błąd zapisu wersji", e); }
 }
 
 async function loadSpotsOptimized() {
-    // 1. Ładowanie natychmiastowe z Local Cache
     const cachedSpots = JSON.parse(localStorage.getItem('spots_cache') || "[]");
     const localVersion = localStorage.getItem('spots_version') || "0";
     
@@ -254,25 +250,16 @@ async function loadSpotsOptimized() {
         });
     }
 
-    // 2. Sprawdzenie w tle, czy dane się zmieniły (dokument "version")
     try {
         const verSnap = await getDoc(doc(db, "system", "version"));
         let remoteVersion = "0";
-        if (verSnap.exists()) {
-            remoteVersion = verSnap.data().v.toString();
-        } else {
-            // Jeśli to pierwsze uruchomienie projektu, tworzymy dokument
-            await setDoc(doc(db, "system", "version"), { v: Date.now().toString() });
-        }
+        if (verSnap.exists()) remoteVersion = verSnap.data().v.toString();
+        else await setDoc(doc(db, "system", "version"), { v: Date.now().toString() });
 
-        // Jeśli wersje są różne (lub nie mamy cache'u), pobieramy wszystko z bazy
         if (remoteVersion !== localVersion || cachedSpots.length === 0) {
             const snap = await getDocs(collection(db, "spots"));
-            
-            // Czyścimy starą mapę i tablicę
             Object.values(spotMarkers).forEach(m => map.removeLayer(m));
-            spotMarkers = {};
-            allSpots = [];
+            spotMarkers = {}; allSpots = [];
 
             snap.forEach(d => {
                 const data = { ...d.data(), id: d.id };
@@ -280,16 +267,13 @@ async function loadSpotsOptimized() {
                 createMarker(data);
             });
 
-            // Zapisujemy nowy cache i nową wersję
             localStorage.setItem('spots_cache', JSON.stringify(allSpots));
             localStorage.setItem('spots_version', remoteVersion);
         }
     } catch(e) { console.warn("Praca offline lub błąd sprawdzania wersji:", e); }
 }
 
-// Uruchamiamy ładowanie
 loadSpotsOptimized();
-// --------------------------------------------------------
 
 window.closeAll = () => {
     document.querySelectorAll('.bottom-panel').forEach(p => p.classList.remove('active'));
@@ -333,10 +317,16 @@ window.updateToggleUI = () => {
 };
 
 window.locateUser = () => map.locate({setView: true, maxZoom: 16});
+
 map.on('locationfound', (e) => {
     userPos = e.latlng;
     if(!userMarker) userMarker = L.marker(e.latlng, {icon: L.divIcon({className:'user-location-dot'})}).addTo(map);
     else userMarker.setLatLng(e.latlng);
+});
+
+// ZMIANA: Obsługa błędu lokalizacji dla WebViewera
+map.on('locationerror', (e) => {
+    alert("Nie udało się pobrać lokalizacji. Sprawdź, czy aplikacja ma uprawnienia dostępu do lokalizacji (GPS).");
 });
 
 const riskIcons = document.querySelectorAll("#riskIcons span");
@@ -345,14 +335,12 @@ riskIcons.forEach((s, i) => { s.onclick = () => { riskLevel = i + 1; riskIcons.f
 document.getElementById('startAdd').onclick = () => {
     if(!document.getElementById('nameInput').value) return alert("Podaj nazwę!");
     adding = true; closeAll(); 
-    // Nowoczesny alert
     document.getElementById('modernAlert').classList.add('show');
 };
 
 map.on('click', async (e) => {
     if(!adding) { closeAll(); return; }
     
-    // Ukrywamy alert
     document.getElementById('modernAlert').classList.remove('show');
 
     const type = document.getElementById('type').value;
@@ -365,15 +353,16 @@ map.on('click', async (e) => {
         ratingSum: 0, ratingCount: 0, creatorId: myUid, comments: []
     };
     
-    const docRef = await addDoc(collection(db, "spots"), data);
-    data.id = docRef.id;
-    
-    createMarker(data);
-    allSpots.push(data); 
-    
-    // Zapisujemy nowy stan w cache i podbijamy wersję na serwerze
-    localStorage.setItem('spots_cache', JSON.stringify(allSpots));
-    updateGlobalDataVersion();
+    try {
+        const docRef = await addDoc(collection(db, "spots"), data);
+        data.id = docRef.id;
+        
+        createMarker(data);
+        allSpots.push(data); 
+        
+        localStorage.setItem('spots_cache', JSON.stringify(allSpots));
+        updateGlobalDataVersion();
+    } catch(e) { alert("Błąd połączenia z bazą danych."); }
 
     adding = false;
 });
@@ -391,7 +380,7 @@ function showSpotDetails(data) {
     currentSpot = data;
     closeAll(); 
     
-    const offset = window.innerWidth < 600 ? 0.002 : 0.002; 
+    const offset = window.innerWidth < 600 ? 0.007 : 0.002; 
     map.flyTo([data.lat - offset, data.lng], 16);
     
     document.getElementById('infoName').innerText = data.name;
@@ -408,10 +397,9 @@ function showSpotDetails(data) {
             sirensHTML += `<span style="font-size: 20px; opacity: ${opacity}; margin-right: 2px;">🚨</span>`;
         }
         
-        // NOWE KOLORY RYZYKA
-        let riskColor = "#ef4444"; // Domyślnie czerwony dla 5
-        if(data.risk <= 2) riskColor = "#166534"; // Ciemnozielony dla 1-2
-        else if(data.risk <= 4) riskColor = "#eab308"; // Żółty dla 3-4
+        let riskColor = "#ef4444"; 
+        if(data.risk <= 2) riskColor = "#166534"; 
+        else if(data.risk <= 4) riskColor = "#eab308"; 
 
         riskDiv.innerHTML = `<span style="color: ${riskColor}; margin-right: 8px;">Przypał:</span> <div style="display:flex;">${sirensHTML}</div>`;
     } else {
