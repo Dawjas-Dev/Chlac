@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "fullscreen",
+  "name": "dawjas-dev.github",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "dawjas-dev.github",
+  "start_url": "https://dawjas-dev.github.io/Chlac/",
+  "theme_color": "#ffffff"
+}
