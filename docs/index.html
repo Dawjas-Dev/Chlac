@@ -7,12 +7,18 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
 body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; font-family:'Inter',sans-serif; background:#f8fafc; }
-#map{height:100%; width:100%; z-index: 1;}
+
+/* NAPRAWA: Zabezpieczenie wymiarów mapy przed znikaniem */
+#map { position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 1; }
+
+/* POPRAWKA 1: SweetAlert zawsze na wierzchu */
+.swal2-container { z-index: 9999 !important; }
 
 .fab, .locate-btn, .ranking-btn, .help-btn {
     position:absolute; border:none; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); z-index:1100;
@@ -24,12 +30,17 @@ body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; fon
 .help-btn { top: 20px; right: 20px; width: 45px; height: 45px; font-size: 22px; color: #3b82f6; }
 
 .overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); display:none; z-index:1200; }
+
+/* NAPRAWA: Stabilne animacje paneli, które zapobiegają ich przypadkowemu wyskakiwaniu */
 .bottom-panel {
-    position:absolute; bottom:-100%; left:0; width:100%; background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position:absolute; bottom: 0; left:0; width:100%; background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index:1300; padding: 20px; padding-bottom: 40px; border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
     max-height: 50vh; overflow-y: auto;
+    transform: translateY(120%); 
+    visibility: hidden;
 }
-.bottom-panel.active { bottom: 0; }
+.bottom-panel.active { transform: translateY(0); visibility: visible; }
+
 .info-panel-compact { padding: 15px; padding-bottom: 25px; }
 
 .center-modal {
@@ -47,6 +58,7 @@ body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; fon
     box-shadow: 0 10px 25px rgba(0,0,0,0.25); 
     transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex; align-items: center; gap: 8px; pointer-events: none;
+    text-align: center; white-space: nowrap;
 }
 .modern-alert.show { top: 20px; }
 
@@ -85,7 +97,7 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
 <div id="map"></div>
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 
-<div id="modernAlert" class="modern-alert">📍 Kliknij wybrane miejsce na mapie</div>
+<div id="modernAlert" class="modern-alert"></div>
 
 <button class="fab" onclick="openAddPanel()">＋</button>
 <button class="ranking-btn" onclick="openRanking()">🏆</button>
@@ -95,11 +107,15 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
 <div class="center-modal" id="helpPanel">
     <div style="text-align:right;"><span style="font-size:24px; cursor:pointer; color:#94a3b8;" onclick="closeAll()">×</span></div>
     <h2 style="margin-top:0; color:#1e293b;">O co tu chodzi?</h2>
-    <p style="color:#475569; line-height:1.5;"><strong>📍 Dodawanie:</strong> Kliknij ikonę +, wybierz typ miejsca, a następnie kliknij na mapę.</p>
-    <p style="color:#475569; line-height:1.5;"><strong>⭐ Oceny:</strong> Każda miejscówka ma ocenę od 1 do 5. Głosuj!</p>
-    <p style="color:#475569; line-height:1.5;"><strong>💬 Komentarze:</strong> Opisuj bieżący stan miejsca pod panelem informacji.</p>
-    <p style="color:#475569; line-height:1.5;"><strong>⚠️ Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
-    <p style="color:#475569; line-height:1.5;"><strong>Kontakt : dawjasdev@gmail.com</strong>  </p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>📍 Dodawanie:</strong> Kliknij ikonę +, wybierz typ miejsca, a następnie kliknij na mapę.</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>⭐ Oceny:</strong> Każda miejscówka ma ocenę od 1 do 5. Głosuj!</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>💬 Komentarze:</strong> Opisuj bieżący stan miejsca pod panelem informacji.</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>⚠️ Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>Kontakt : dawjasdev@gmail.com</strong>  </p>
+    
+    <a href="https://www.wp.pl" target="_blank" style="display:block; margin-top:20px; padding:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); color:white; text-align:center; text-decoration:none; border-radius:12px; font-weight:bold; box-shadow:0 4px 10px rgba(245, 158, 11, 0.3);">
+        🍺 Postaw mi piwo
+    </a>
 </div>
 
 <div class="center-modal" id="reportPanel">
@@ -210,6 +226,17 @@ function safeStorageSet(key, value) {
     catch (e) { console.warn("LocalStorage zablokowany"); }
 }
 
+// POPRAWKA 2: Uniwersalna funkcja do ładnych, znikających alertów
+window.showToast = (msg, timeout = 3000) => {
+    const alertEl = document.getElementById('modernAlert');
+    alertEl.innerHTML = msg;
+    alertEl.classList.add('show');
+    if (timeout > 0) {
+        setTimeout(() => alertEl.classList.remove('show'), timeout);
+    }
+};
+window.hideToast = () => document.getElementById('modernAlert').classList.remove('show');
+
 // NAJPIERW ŁADUJEMY MAPĘ
 const savedLat = parseFloat(safeStorageGet('map_lat', 52.2));
 const savedLng = parseFloat(safeStorageGet('map_lng', 19.2));
@@ -310,7 +337,10 @@ window.openReportModal = (type, targetId) => {
     let reportedItems = [];
     try { reportedItems = JSON.parse(safeStorageGet('my_reports', "[]")); } catch(e){}
     
-    if(reportedItems.includes(targetId)) { alert("Już zgłosiłeś ten element. Dziękujemy!"); return; }
+    if(reportedItems.includes(targetId)) { 
+        window.showToast('✅ Już zgłosiłeś ten element wcześniej.'); 
+        return; 
+    }
 
     closeAll();
     reportTarget = { type, id: targetId };
@@ -329,7 +359,7 @@ window.submitReport = async () => {
     safeStorageSet('my_reports', JSON.stringify(reportedItems));
 
     closeAll();
-    alert("Zgłoszenie wysłane. Dziękujemy za pomoc!");
+    window.showToast('🙌 Zgłoszenie wysłane. Dziękujemy!');
 };
 
 window.openAddPanel = () => { closeAll(); document.getElementById('addPanel').classList.add('active'); document.getElementById('overlay').style.display="block"; window.togglePlenerUI(); };
@@ -354,22 +384,47 @@ const riskIcons = document.querySelectorAll("#riskIcons span");
 riskIcons.forEach((s, i) => { s.onclick = () => { riskLevel = i + 1; riskIcons.forEach((el, idx) => el.classList.toggle('active', idx < riskLevel)); }; });
 
 document.getElementById('startAdd').onclick = () => {
-    if(!document.getElementById('nameInput').value) return alert("Podaj nazwę!");
-    adding = true; closeAll(); 
-    document.getElementById('modernAlert').classList.add('show');
+    if(!document.getElementById('nameInput').value) {
+        window.showToast('⚠️ Musisz podać nazwę miejsca!');
+        return;
+    }
+    adding = true; 
+    closeAll(); 
+    // Pokazuje napis "Kliknij na mapie" tak długo, aż użytkownik nie kliknie (timeout = 0)
+    window.showToast('📍 Kliknij wybrane miejsce na mapie', 0);
 };
 
 map.on('click', async (e) => {
     if(!adding) { closeAll(); return; }
     
-    document.getElementById('modernAlert').classList.remove('show');
+    window.hideToast(); // Chowa instrukcję klikania na mapę
 
+    const spotName = document.getElementById('nameInput').value;
     const type = document.getElementById('type').value;
     const isIllegal = type === "plener" && document.getElementById('illegalToggle').checked;
     
+    // POPRAWKA: Dodano heightAuto: false
+    const result = await Swal.fire({
+        title: 'Nowa miejscówka',
+        html: `Czy na pewno chcesz dodać miejscówkę o nazwie:<br><strong style="color:#3b82f6;">${spotName}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#22c55e',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Tak, dodaj!',
+        cancelButtonText: 'Anuluj',
+        heightAuto: false 
+    });
+
+    if (!result.isConfirmed) {
+        adding = false; 
+        return; // Przerywa dodawanie, jeśli użytkownik zrezygnował
+    }
+    
+    // Jeśli zatwierdził - procesujemy dodawanie:
     const data = {
         lat: e.latlng.lat, lng: e.latlng.lng,
-        name: document.getElementById('nameInput').value, desc: document.getElementById('descInput').value,
+        name: spotName, desc: document.getElementById('descInput').value,
         type: type, illegal: isIllegal, risk: isIllegal ? riskLevel : 0,
         ratingSum: 0, ratingCount: 0, creatorId: myUid, comments: []
     };
@@ -383,12 +438,13 @@ map.on('click', async (e) => {
     safeStorageSet('spots_cache', JSON.stringify(allSpots));
     updateGlobalDataVersion();
 
+    window.showToast('🎉 Miejscówka dodana!');
     adding = false;
 });
 
 function createMarker(data) {
     const marker = L.marker([data.lat, data.lng], {
-        icon: L.divIcon({ html: `<div style="font-size:25px">${getEmoji(data.type)}</div>`, className:''})
+        icon: L.divIcon({ html: `<div style="font-size:38px; text-shadow: 0px 2px 5px rgba(0,0,0,0.4);">${getEmoji(data.type)}</div>`, className:''})
     }).addTo(map);
     
     spotMarkers[data.id] = marker;
@@ -489,7 +545,21 @@ window.addComment = async () => {
 };
 
 window.deleteComment = async (commentId) => {
-    if(!confirm("Usunąć ten komentarz?")) return;
+    // POPRAWKA: Dodano heightAuto: false
+    const result = await Swal.fire({
+        title: 'Usunąć komentarz?',
+        text: 'Tej operacji nie można cofnąć.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Tak, usuń',
+        cancelButtonText: 'Anuluj',
+        heightAuto: false
+    });
+    
+    if(!result.isConfirmed) return;
+
     const updatedComments = currentSpot.comments.filter(c => c.id !== commentId);
     await updateDoc(doc(db, "spots", currentSpot.id), { comments: updatedComments });
     currentSpot.comments = updatedComments;
@@ -503,15 +573,55 @@ window.deleteComment = async (commentId) => {
 };
 
 window.deleteSpot = async () => {
-    if(!confirm("Na pewno chcesz całkowicie usunąć tę miejscówkę?")) return;
-    await deleteDoc(doc(db, "spots", currentSpot.id));
+    // 1. Pytamy o zgodę (zabezpieczenie mapy heightAuto: false włączone)
+    const result = await Swal.fire({
+        title: 'Usunąć miejscówkę?',
+        text: 'Czy na pewno chcesz na zawsze skasować to miejsce z mapy?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Tak, usuń',
+        cancelButtonText: 'Anuluj',
+        heightAuto: false 
+    });
     
-    if(spotMarkers[currentSpot.id]) { map.removeLayer(spotMarkers[currentSpot.id]); delete spotMarkers[currentSpot.id]; }
-    allSpots = allSpots.filter(s => s.id !== currentSpot.id);
-    closeAll();
+    if(!result.isConfirmed) return;
 
-    safeStorageSet('spots_cache', JSON.stringify(allSpots));
-    updateGlobalDataVersion();
+    try {
+        const idToDelete = currentSpot.id;
+
+        // 2. Najpierw usuwamy z Firebase
+        await deleteDoc(doc(db, "spots", idToDelete));
+        
+        // 3. Usuwamy marker z mapy
+        if(spotMarkers[idToDelete]) { 
+            map.removeLayer(spotMarkers[idToDelete]); 
+            delete spotMarkers[idToDelete]; 
+        }
+
+        // 4. Czyścimy dane w pamięci aplikacji
+        allSpots = allSpots.filter(s => s.id !== idToDelete);
+        safeStorageSet('spots_cache', JSON.stringify(allSpots));
+        
+        // 5. ZAMYKAMY WSZYSTKO I CZYŚCIMY STAN
+        closeAll();
+        currentSpot = null;
+        adding = false; 
+
+        // 6. Odświeżamy wersję danych
+        await updateGlobalDataVersion();
+        
+        // 7. WYMUSZAMY ODŚWIEŻENIE MAPY 
+        setTimeout(() => {
+            map.invalidateSize();
+            window.showToast('🗑️ Miejscówka została usunięta');
+        }, 300);
+
+    } catch(err) {
+        console.error("Błąd podczas usuwania:", err);
+        window.showToast('❌ Ups! Coś poszło nie tak.');
+    }
 };
 
 function getEmoji(t) { return t==="plener"?"🍾":t==="pub"?"🍻":"🍸"; }
@@ -521,7 +631,11 @@ userStars.forEach((s, i) => {
     s.onclick = async () => {
         let ratings = {};
         try { ratings = JSON.parse(safeStorageGet('my_ratings', "{}")); } catch(e){}
-        if(ratings[currentSpot.id]) return alert("Już oceniono!");
+        
+        if(ratings[currentSpot.id]) {
+            window.showToast('⭐ Już oceniłeś tę miejscówkę!');
+            return;
+        }
         
         const val = i + 1;
         currentSpot.ratingSum += val; currentSpot.ratingCount += 1;
@@ -536,6 +650,8 @@ userStars.forEach((s, i) => {
 
         safeStorageSet('spots_cache', JSON.stringify(allSpots));
         updateGlobalDataVersion();
+        
+        window.showToast('Dzięki za ocenę! 👍');
     };
 });
 
@@ -556,7 +672,10 @@ function updateStarsUI() {
 }
 
 window.openRanking = () => {
-    if(!userPos) { alert("Włącz lokalizację 📍"); return; }
+    if(!userPos) { 
+        window.showToast('📍 Włącz lokalizację w urządzeniu!'); 
+        return; 
+    }
     const list = document.getElementById('rankingList'); list.innerHTML = "";
     
     const nearby = allSpots.map(s => ({ ...s, dist: userPos.distanceTo(L.latLng(s.lat, s.lng)), score: s.ratingCount ? s.ratingSum/s.ratingCount : 0 }))
