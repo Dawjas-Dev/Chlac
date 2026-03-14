@@ -8,40 +8,41 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+* { box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
 body, html { margin:0; padding:0; height:100%; width:100%; overflow: hidden; font-family:'Inter',sans-serif; background:#f8fafc; }
 
-/* NAPRAWA: Zabezpieczenie wymiarów mapy przed znikaniem */
 #map { position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 1; }
-
-/* POPRAWKA 1: SweetAlert zawsze na wierzchu */
 .swal2-container { z-index: 9999 !important; }
 
-.fab, .locate-btn, .ranking-btn, .help-btn {
+/* Przyciski na mapie */
+.fab, .locate-btn, .ranking-btn, .help-btn, .filter-btn {
     position:absolute; border:none; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); z-index:1100;
     display:flex; justify-content:center; align-items:center; background: white; border-radius:50%; font-weight: bold;
 }
-.fab { bottom: 30px; left: 20px; width: 60px; height: 60px; font-size: 30px; background: linear-gradient(135deg,#f59e0b,#ef4444); color: white; }
-.locate-btn { bottom: 30px; right: 20px; width: 50px; height: 50px; font-size: 22px; }
-.ranking-btn { bottom: 30px; right: 85px; width: 50px; height: 50px; font-size: 22px; }
-.help-btn { top: 20px; right: 20px; width: 45px; height: 45px; font-size: 22px; color: #3b82f6; }
+.fab { bottom: 25px; left: 20px; width: 50px; height: 50px; font-size: 26px; background: linear-gradient(135deg,#f59e0b,#ef4444); color: white; }
+
+/* Grupa prawych przycisków */
+.filter-btn { bottom: 25px; right: 120px; width: 40px; height: 40px; font-size: 18px; }
+.ranking-btn { bottom: 25px; right: 70px; width: 40px; height: 40px; font-size: 18px; }
+.locate-btn { bottom: 25px; right: 20px; width: 40px; height: 40px; font-size: 18px; }
+
+.help-btn { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 20px; color: #3b82f6; }
 
 .overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); display:none; z-index:1200; }
 
-/* NAPRAWA: Stabilne animacje paneli, które zapobiegają ich przypadkowemu wyskakiwaniu */
 .bottom-panel {
     position:absolute; bottom: 0; left:0; width:100%; background:white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index:1300; padding: 20px; padding-bottom: 40px; border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
-    max-height: 50vh; overflow-y: auto;
+    max-height: 55vh; overflow-y: auto;
     transform: translateY(120%); 
     visibility: hidden;
 }
 .bottom-panel.active { transform: translateY(0); visibility: visible; }
 
-.info-panel-compact { padding: 15px; padding-bottom: 25px; }
+.info-panel-compact { padding: 15px; padding-bottom: 25px; max-height: 60vh; }
 
 .center-modal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
@@ -83,13 +84,30 @@ input:checked + .slider:before { transform: translateX(26px); }
 .ranking-item { padding: 15px; border-radius: 12px; margin-bottom: 8px; background: #f1f5f9; display: flex; flex-direction: column; cursor: pointer; }
 .user-location-dot { background: #3b82f6; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
 
-input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; font-size:16px; outline:none; }
-.submit-btn { width:100%; padding:15px; border-radius:12px; border:none; font-weight:600; background: linear-gradient(135deg,#f59e0b,#ef4444); color:white; font-size: 16px; cursor: pointer; }
+input:not([type="checkbox"]), select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #e2e8f0; font-size:16px; outline:none; box-sizing: border-box;}
+.submit-btn { width:100%; padding:15px; border-radius:12px; border:none; font-weight:600; background: linear-gradient(135deg,#f59e0b,#ef4444); color:white; font-size: 16px; cursor: pointer; transition: 0.2s;}
+.submit-btn:active { transform: scale(0.98); }
 .close-handle { width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px; margin: -5px auto 15px; cursor: pointer; }
 
 .comment-box { background: #f1f5f9; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: flex-start;}
 .action-icon { cursor: pointer; opacity: 0.7; transition: 0.2s; }
 .action-icon:hover { opacity: 1; transform: scale(1.1); }
+
+/* Tagi i Przyciski Akcji */
+.tags-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tag-chip { background: #e2e8f0; color: #475569; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+.tag-chip.active { background: #dbeafe; color: #2563eb; border-color: #3b82f6; }
+.tag-chip.display-only { background: #f1f5f9; cursor: default; }
+
+.action-buttons { display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
+.action-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; transition: 0.2s; }
+.action-btn:active { transform: scale(0.96); }
+.btn-nav { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.btn-share { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+/* Filtry Checkboxy */
+.checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; margin-bottom: 12px; cursor: pointer; color: #334155; }
+.checkbox-label input[type="checkbox"] { width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: #3b82f6; }
 </style>
 </head>
 <body>
@@ -99,22 +117,25 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
 
 <div id="modernAlert" class="modern-alert"></div>
 
-<button class="fab" onclick="openAddPanel()">＋</button>
+<button class="filter-btn" onclick="openFilters()">☰</button>
 <button class="ranking-btn" onclick="openRanking()">🏆</button>
 <button class="locate-btn" onclick="locateUser()">📍</button>
+
+<button class="fab" onclick="openAddPanel()">＋</button>
 <button class="help-btn" onclick="openHelpPanel()">❓</button>
 
 <div class="center-modal" id="helpPanel">
     <div style="text-align:right;"><span style="font-size:24px; cursor:pointer; color:#94a3b8;" onclick="closeAll()">×</span></div>
     <h2 style="margin-top:0; color:#1e293b;">O co tu chodzi?</h2>
     <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>📍 Dodawanie:</strong> Znasz fajną miejscówkę? Kliknij ikonę + , i udostępnij ją wszystkim.</p>
-    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>⭐ 💬 Oceny i komenatrze:</strong>Oceniaj i komentuj </p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>⭐ 💬 Oceny i komentarze:</strong> Oceniaj i komentuj miejsca, w których byłeś.</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>🏆 Ranking:</strong> Pokazuje najlepiej oceniane miejscówki w promieniu 5 km od Ciebie. Użyte filtry wpływają na to, co widzisz w rankingu!</p>
     <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>⚠️ Zgłaszanie:</strong> Widzisz spam albo fałszywe miejsce? Użyj przycisku zgłoszenia.</p>
-    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong> Współpraca: </strong> Chcesz wypromować swoją miejscówkę lub napój ? -> napisz do nas</p>
-    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>Kontakt : dawjasdev@gmail.com</strong>  </p>
-    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>    ↓ Doceniasz moją pracę ?  ↓</strong>  </p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>Współpraca:</strong> Chcesz wypromować swoją miejscówkę lub napój ? -> napisz do nas</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px;"><strong>Kontakt:</strong> dawjasdev@gmail.com</p>
+    <p style="color:#475569; line-height:1.5; font-size:13px; text-align:center;"><strong>↓ Doceniasz moją pracę? ↓</strong></p>
     
-    <a href="https://suppi.pl/gdziechlac" target="_blank" style="display:block; margin-top:20px; padding:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); color:white; text-align:center; text-decoration:none; border-radius:12px; font-weight:bold; box-shadow:0 4px 10px rgba(245, 158, 11, 0.3);">
+    <a href="https://suppi.pl/gdziechlac" target="_blank" style="display:block; margin-top:15px; padding:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); color:white; text-align:center; text-decoration:none; border-radius:12px; font-weight:bold; box-shadow:0 4px 10px rgba(245, 158, 11, 0.3);">
         🍺 Postaw mi piwo
     </a>
 </div>
@@ -145,6 +166,9 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
     <input id="nameInput" placeholder="Nazwa miejsca">
     <input id="descInput" placeholder="Krótki opis">
     
+    <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #64748b;">Udogodnienia (opcjonalne):</p>
+    <div class="tags-container" id="addTagsContainer"></div>
+
     <div id="plenerExtras">
         <div class="flex-row-between">
             <span id="toggleLabel" style="font-weight:600">✅ Legalna</span>
@@ -165,6 +189,22 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
     <button class="submit-btn" id="startAdd">Wybierz punkt na mapie</button>
 </div>
 
+<div class="bottom-panel" id="filterPanel">
+    <div class="close-handle" onclick="closeAll()"></div>
+    <h2 style="margin-top:0; margin-bottom: 15px;">Filtruj miejscówki</h2>
+    
+    <div style="margin-bottom: 15px;">
+        <label class="checkbox-label"><input type="checkbox" id="filterPlener" checked> 🍾 Plenery</label>
+        <label class="checkbox-label"><input type="checkbox" id="filterPub" checked> 🍻 Puby</label>
+        <label class="checkbox-label"><input type="checkbox" id="filterClub" checked> 🍸 Kluby</label>
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 25px;">
+        <button class="submit-btn" style="background: #f1f5f9; color: #475569; flex: 1;" onclick="resetFilters()">Resetuj</button>
+        <button class="submit-btn" style="background: #3b82f6; flex: 2;" onclick="applyFilters()">Zastosuj</button>
+    </div>
+</div>
+
 <div class="bottom-panel info-panel-compact" id="infoPanel">
     <div class="close-handle" onclick="closeAll()"></div>
     <div class="flex-row-between" style="margin-bottom: 4px;">
@@ -175,8 +215,11 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
         <span class="action-icon" id="reportSpotBtn" style="font-size: 14px; padding: 5px;" title="Zgłoś to miejsce">⚠️</span>
     </div>
     <p id="infoDesc" style="color:#64748b; margin: 4px 0 10px; font-size: 14px;"></p>
-    <div id="infoRisk" style="margin-bottom:10px; font-weight:600; font-size: 14px; display: flex; align-items: center;"></div>
     
+    <div class="tags-container" id="infoTagsContainer" style="margin-bottom: 10px;"></div>
+
+    <div id="infoRisk" style="margin-bottom:10px; font-weight:600; font-size: 14px; display: flex; align-items: center;"></div>
+
     <hr style="border:0; border-top:1px solid #f1f5f9; margin: 12px 0;">
     
     <div class="flex-row-between" style="margin-bottom: 12px;">
@@ -204,6 +247,11 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
         <button onclick="addComment()" style="background: #3b82f6; color: white; border: none; border-radius: 12px; padding: 0 15px; font-weight: bold; cursor:pointer;">Wyślij</button>
     </div>
 
+    <div class="action-buttons">
+        <button class="action-btn btn-nav" onclick="navigateSpot()">📍 Prowadź</button>
+        <button class="action-btn btn-share" onclick="shareSpot()">💌 Udostępnij</button>
+    </div>
+
     <button id="deleteSpotBtn" onclick="deleteSpot()" style="width:100%; padding:14px; border-radius:12px; border:none; font-weight:600; background: #ef4444; color:white; font-size: 15px; display:none; cursor:pointer;">🗑️ Usuń tę miejscówkę</button>
 </div>
 
@@ -217,7 +265,7 @@ input, select { width:100%; padding:14px; margin-bottom:12px; border-radius:12px
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
 import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
 
-// BEZPIECZNY LOCALSTORAGE (Kluczowe dla App Inventora)
+// BEZPIECZNY LOCALSTORAGE
 function safeStorageGet(key, defaultValue) {
     try { return localStorage.getItem(key) || defaultValue; }
     catch (e) { return defaultValue; }
@@ -227,7 +275,6 @@ function safeStorageSet(key, value) {
     catch (e) { console.warn("LocalStorage zablokowany"); }
 }
 
-// POPRAWKA 2: Uniwersalna funkcja do ładnych, znikających alertów
 window.showToast = (msg, timeout = 3000) => {
     const alertEl = document.getElementById('modernAlert');
     alertEl.innerHTML = msg;
@@ -238,7 +285,7 @@ window.showToast = (msg, timeout = 3000) => {
 };
 window.hideToast = () => document.getElementById('modernAlert').classList.remove('show');
 
-// NAJPIERW ŁADUJEMY MAPĘ
+// INICJALIZACJA MAPY
 const savedLat = parseFloat(safeStorageGet('map_lat', 52.2));
 const savedLng = parseFloat(safeStorageGet('map_lng', 19.2));
 const savedZoom = parseInt(safeStorageGet('map_zoom', 6));
@@ -260,9 +307,9 @@ if (!myUid) {
     safeStorageSet('my_uid', myUid); 
 }
 
-// FIREBASE CONFIG
+// FIREBASE CONFIG (Wpisz swój apiKey)
 const firebaseConfig = { 
-    apiKey: "AIza...", // PAMIĘTAJ O WPISANIU SWOJEGO KLUCZA TUTAJ!
+    apiKey: "AIza...", 
     authDomain: "mapa-miejscowek.firebaseapp.com", 
     projectId: "mapa-miejscowek", 
     storageBucket: "mapa-miejscowek.appspot.com", 
@@ -277,6 +324,12 @@ let allSpots = [];
 let spotMarkers = {}; 
 let userPos = null;
 let reportTarget = { type: null, id: null };
+
+// USTAWIENIA TAGÓW
+const plenerTags = ['Ławeczki', 'Dobre widoki', 'Odludzie','Ognisko','Nie ma komarów','Zadaszenie','Blisko sklep 24h'];
+const pubTags = ['Piwo rzemieślnicze', 'Tanie alko', 'Ogródek', 'Jedzenie','Transmisja meczy', 'Muzyka na żywo', 'Rzutki/Bilard itp'];
+const clubTags = ['Tanie drinki'];
+let activeTags = [];
 
 async function updateGlobalDataVersion() {
     const newVersion = Date.now().toString();
@@ -320,6 +373,7 @@ async function loadSpotsOptimized() {
 
             safeStorageSet('spots_cache', JSON.stringify(allSpots));
             safeStorageSet('spots_version', remoteVersion);
+            window.applyFilters(); // Zastosuj filtry po pobraniu nowych danych
         }
     } catch(e) { console.warn("Praca offline lub błąd sprawdzania wersji:", e); }
 }
@@ -363,9 +417,82 @@ window.submitReport = async () => {
     window.showToast('🙌 Zgłoszenie wysłane. Dziękujemy!');
 };
 
-window.openAddPanel = () => { closeAll(); document.getElementById('addPanel').classList.add('active'); document.getElementById('overlay').style.display="block"; window.togglePlenerUI(); };
+// OTWIERANIE PANELU FILTRÓW
+window.openFilters = () => { 
+    closeAll(); 
+    document.getElementById('filterPanel').classList.add('active'); 
+    document.getElementById('overlay').style.display="block"; 
+};
 
-window.togglePlenerUI = () => { document.getElementById('plenerExtras').style.display = (document.getElementById('type').value === "plener") ? "block" : "none"; };
+// RESETOWANIE FILTRÓW
+window.resetFilters = () => {
+    document.getElementById('filterPlener').checked = true;
+    document.getElementById('filterPub').checked = true;
+    document.getElementById('filterClub').checked = true;
+    window.applyFilters();
+};
+
+// STOSOWANIE FILTRÓW (Checkboxy)
+window.applyFilters = () => {
+    const showPlener = document.getElementById('filterPlener').checked;
+    const showPub = document.getElementById('filterPub').checked;
+    const showClub = document.getElementById('filterClub').checked;
+
+    allSpots.forEach(spot => {
+        let show = false;
+        if (spot.type === 'plener' && showPlener) show = true;
+        if (spot.type === 'pub' && showPub) show = true;
+        if (spot.type === 'club' && showClub) show = true;
+
+        const marker = spotMarkers[spot.id];
+        if (show) {
+            if (marker && !map.hasLayer(marker)) {
+                marker.addTo(map);
+            }
+        } else {
+            if (marker && map.hasLayer(marker)) {
+                map.removeLayer(marker);
+            }
+        }
+    });
+    
+    closeAll();
+    window.showToast('🎛️ Zastosowano filtry');
+};
+
+// INTERFEJS DODAWANIA I TAGÓW
+window.openAddPanel = () => { 
+    closeAll(); 
+    document.getElementById('addPanel').classList.add('active'); 
+    document.getElementById('overlay').style.display="block"; 
+    window.togglePlenerUI(); 
+};
+
+window.togglePlenerUI = () => { 
+    const typeValue = document.getElementById('type').value;
+    document.getElementById('plenerExtras').style.display = (typeValue === "plener") ? "block" : "none"; 
+    
+    activeTags = [];
+    const container = document.getElementById('addTagsContainer');
+    container.innerHTML = "";
+    
+    let tagsToShow = [];
+    if(typeValue === "plener") tagsToShow = plenerTags;
+    else if(typeValue === "pub") tagsToShow = pubTags;
+    else tagsToShow = clubTags;
+    
+    tagsToShow.forEach(tag => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.innerText = tag;
+        chip.onclick = () => {
+            chip.classList.toggle('active');
+            if (activeTags.includes(tag)) activeTags = activeTags.filter(t => t !== tag);
+            else activeTags.push(tag);
+        };
+        container.appendChild(chip);
+    });
+};
 
 window.updateToggleUI = () => {
     const isIllegal = document.getElementById('illegalToggle').checked;
@@ -373,7 +500,14 @@ window.updateToggleUI = () => {
     document.getElementById('riskBox').style.display = isIllegal ? "block" : "none";
 };
 
-window.locateUser = () => map.locate({setView: true, maxZoom: 16});
+// LOKALIZACJA UŻYTKOWNIKA
+window.locateUser = () => {
+    if (userPos) {
+        map.flyTo(userPos, 16);
+    } else {
+        map.locate({setView: true, maxZoom: 16});
+    }
+};
 
 map.on('locationfound', (e) => {
     userPos = e.latlng;
@@ -391,23 +525,21 @@ document.getElementById('startAdd').onclick = () => {
     }
     adding = true; 
     closeAll(); 
-    // Pokazuje napis "Kliknij na mapie" tak długo, aż użytkownik nie kliknie (timeout = 0)
     window.showToast('📍 Kliknij wybrane miejsce na mapie', 0);
 };
 
 map.on('click', async (e) => {
     if(!adding) { closeAll(); return; }
     
-    window.hideToast(); // Chowa instrukcję klikania na mapę
+    window.hideToast(); 
 
     const spotName = document.getElementById('nameInput').value;
     const type = document.getElementById('type').value;
     const isIllegal = type === "plener" && document.getElementById('illegalToggle').checked;
     
-    // POPRAWKA: Dodano heightAuto: false
     const result = await Swal.fire({
         title: 'Nowa miejscówka',
-        html: `Czy na pewno chcesz dodać miejscówkę o nazwie:<br><strong style="color:#3b82f6;">${spotName}</strong>?`,
+        html: `Czy na pewno chcesz dodać miejscówkę:<br><strong style="color:#3b82f6;">${spotName}</strong>?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#22c55e',
@@ -419,15 +551,15 @@ map.on('click', async (e) => {
 
     if (!result.isConfirmed) {
         adding = false; 
-        return; // Przerywa dodawanie, jeśli użytkownik zrezygnował
+        return; 
     }
     
-    // Jeśli zatwierdził - procesujemy dodawanie:
     const data = {
         lat: e.latlng.lat, lng: e.latlng.lng,
         name: spotName, desc: document.getElementById('descInput').value,
         type: type, illegal: isIllegal, risk: isIllegal ? riskLevel : 0,
-        ratingSum: 0, ratingCount: 0, creatorId: myUid, comments: []
+        ratingSum: 0, ratingCount: 0, creatorId: myUid, comments: [],
+        tags: activeTags 
     };
     
     const docRef = await addDoc(collection(db, "spots"), data);
@@ -440,7 +572,11 @@ map.on('click', async (e) => {
     updateGlobalDataVersion();
 
     window.showToast('🎉 Miejscówka dodana!');
+    window.applyFilters(); // Odśwież widoczność na wypadek gdyby kategoria była odznaczona
     adding = false;
+    
+    document.getElementById('nameInput').value = "";
+    document.getElementById('descInput').value = "";
 });
 
 function createMarker(data) {
@@ -463,6 +599,17 @@ function showSpotDetails(data) {
     document.getElementById('infoEmoji').innerText = getEmoji(data.type);
     document.getElementById('infoDesc').innerText = data.desc;
     
+    const tagsContainer = document.getElementById('infoTagsContainer');
+    tagsContainer.innerHTML = "";
+    if (data.tags && data.tags.length > 0) {
+        data.tags.forEach(tag => {
+            const chip = document.createElement('span');
+            chip.className = 'tag-chip display-only';
+            chip.innerText = tag;
+            tagsContainer.appendChild(chip);
+        });
+    }
+    
     document.getElementById('reportSpotBtn').onclick = () => window.openReportModal('spot', data.id);
     
     const riskDiv = document.getElementById('infoRisk');
@@ -472,7 +619,6 @@ function showSpotDetails(data) {
             const opacity = i < data.risk ? "1" : "0.2";
             sirensHTML += `<span style="font-size: 20px; opacity: ${opacity}; margin-right: 2px;">🚨</span>`;
         }
-        
         let riskColor = "#ef4444";
         if(data.risk <= 2) riskColor = "#166534"; 
         else if(data.risk <= 4) riskColor = "#eab308"; 
@@ -487,8 +633,32 @@ function showSpotDetails(data) {
     renderComments();
     
     document.getElementById('deleteSpotBtn').style.display = (currentSpot.creatorId === myUid) ? "block" : "none";
+    
+    // Przewiń panel info do góry przy otwarciu nowego miejsca
+    document.getElementById('infoPanel').scrollTop = 0;
     document.getElementById('infoPanel').classList.add('active');
 }
+
+window.navigateSpot = () => {
+    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${currentSpot.lat},${currentSpot.lng}`;
+    window.open(navUrl, '_blank');
+};
+
+window.shareSpot = async () => {
+    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${currentSpot.lat},${currentSpot.lng}`;
+    const scoreText = currentSpot.ratingCount ? (currentSpot.ratingSum/currentSpot.ratingCount).toFixed(1) : "Brak oceny";
+    
+    const shareData = {
+        title: currentSpot.name,
+        text: `Wbijaj do: ${currentSpot.name}! 🍻 (Ocena: ${scoreText}). Zobacz dojazd na mapie:`,
+        url: navUrl
+    };
+
+    try {
+        if (navigator.share) await navigator.share(shareData);
+        else prompt("Skopiuj link do mapy i wyślij znajomym:", navUrl);
+    } catch (err) { console.log('Udostępnianie przerwane', err); }
+};
 
 function renderComments() {
     const list = document.getElementById('commentsList');
@@ -546,7 +716,6 @@ window.addComment = async () => {
 };
 
 window.deleteComment = async (commentId) => {
-    // POPRAWKA: Dodano heightAuto: false
     const result = await Swal.fire({
         title: 'Usunąć komentarz?',
         text: 'Tej operacji nie można cofnąć.',
@@ -574,7 +743,6 @@ window.deleteComment = async (commentId) => {
 };
 
 window.deleteSpot = async () => {
-    // 1. Pytamy o zgodę (zabezpieczenie mapy heightAuto: false włączone)
     const result = await Swal.fire({
         title: 'Usunąć miejscówkę?',
         text: 'Czy na pewno chcesz na zawsze skasować to miejsce z mapy?',
@@ -591,38 +759,28 @@ window.deleteSpot = async () => {
 
     try {
         const idToDelete = currentSpot.id;
-
-        // 2. Najpierw usuwamy z Firebase
         await deleteDoc(doc(db, "spots", idToDelete));
         
-        // 3. Usuwamy marker z mapy
         if(spotMarkers[idToDelete]) { 
             map.removeLayer(spotMarkers[idToDelete]); 
             delete spotMarkers[idToDelete]; 
         }
 
-        // 4. Czyścimy dane w pamięci aplikacji
         allSpots = allSpots.filter(s => s.id !== idToDelete);
         safeStorageSet('spots_cache', JSON.stringify(allSpots));
         
-        // 5. ZAMYKAMY WSZYSTKO I CZYŚCIMY STAN
         closeAll();
         currentSpot = null;
         adding = false; 
 
-        // 6. Odświeżamy wersję danych
         await updateGlobalDataVersion();
         
-        // 7. WYMUSZAMY ODŚWIEŻENIE MAPY 
         setTimeout(() => {
             map.invalidateSize();
             window.showToast('🗑️ Miejscówka została usunięta');
         }, 300);
 
-    } catch(err) {
-        console.error("Błąd podczas usuwania:", err);
-        window.showToast('❌ Ups! Coś poszło nie tak.');
-    }
+    } catch(err) { window.showToast('❌ Ups! Coś poszło nie tak.'); }
 };
 
 function getEmoji(t) { return t==="plener"?"🍾":t==="pub"?"🍻":"🍸"; }
@@ -673,16 +831,25 @@ function updateStarsUI() {
 }
 
 window.openRanking = () => {
-    if(!userPos) { 
-        window.showToast('📍 Włącz lokalizację w urządzeniu!'); 
-        return; 
-    }
+    if(!userPos) { window.showToast('📍 Użyj najpierw przycisku lokalizacji na mapie!'); return; }
+    
+    // Sprawdzamy stan filtrów przed zbudowaniem rankingu
+    const showPlener = document.getElementById('filterPlener').checked;
+    const showPub = document.getElementById('filterPub').checked;
+    const showClub = document.getElementById('filterClub').checked;
+    
     const list = document.getElementById('rankingList'); list.innerHTML = "";
     
-    const nearby = allSpots.map(s => ({ ...s, dist: userPos.distanceTo(L.latLng(s.lat, s.lng)), score: s.ratingCount ? s.ratingSum/s.ratingCount : 0 }))
+    const nearby = allSpots.filter(s => {
+        if (s.type === 'plener' && !showPlener) return false;
+        if (s.type === 'pub' && !showPub) return false;
+        if (s.type === 'club' && !showClub) return false;
+        return true;
+    })
+    .map(s => ({ ...s, dist: userPos.distanceTo(L.latLng(s.lat, s.lng)), score: s.ratingCount ? s.ratingSum/s.ratingCount : 0 }))
     .filter(s => s.dist <= 5000).sort((a,b) => b.score - a.score);
 
-    if(nearby.length === 0) list.innerHTML = "<p style='text-align:center; color:#94a3b8; padding:20px;'>Brak miejscówek w promieniu 5 km.</p>";
+    if(nearby.length === 0) list.innerHTML = "<p style='text-align:center; color:#94a3b8; padding:20px;'>Brak miejscówek (lub odznaczyłeś je w filtrach) w promieniu 5 km.</p>";
     else {
         nearby.forEach(s => {
             const item = document.createElement('div'); item.className = 'ranking-item';
