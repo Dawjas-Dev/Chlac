@@ -246,7 +246,7 @@ input:not([type="checkbox"]), select { width:100%; padding:14px; margin-bottom:1
         <input id="newComment" placeholder="Napisz coś..." style="margin-bottom: 0; flex: 1; padding: 12px; font-size: 14px;">
         <button onclick="addComment()" style="background: #3b82f6; color: white; border: none; border-radius: 12px; padding: 0 15px; font-weight: bold; cursor:pointer;">Wyślij</button>
     </div>
-<!-- 
+ <!-- 
     <div class="action-buttons">
         <button class="action-btn btn-nav" onclick="navigateSpot()">📍 Prowadź</button>
         <button class="action-btn btn-share" onclick="shareSpot()">💌 Udostępnij</button>
@@ -561,9 +561,11 @@ map.on('click', async (e) => {
         ratingSum: 0, ratingCount: 0, creatorId: myUid, comments: [],
         tags: activeTags 
     };
+
+    const id = Date.now().toString();
+    const docRef = await setDoc(doc(db, "spots", id), data);
     
-    const docRef = await addDoc(collection(db, "spots"), data);
-    data.id = docRef.id;
+    data.id = id;
     
     createMarker(data);
     allSpots.push(data); 
